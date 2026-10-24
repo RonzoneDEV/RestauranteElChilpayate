@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Datos de la Empresa · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css(v='3.2')}">
+  <style>
+    .config-layout {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 992px) {
+      .config-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+    .config-card {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 26px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    }
+    .preview-card {
+      background: #f8fafc;
+      border: 2px dashed #cbd5e1;
+      border-radius: 18px;
+      padding: 24px;
+    }
+    .ticket-mockup {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+      font-family: 'Courier New', Courier, monospace;
+      max-width: 340px;
+      margin: 0 auto;
+      color: #0f172a;
+    }
+    .ticket-mockup-header {
+      text-align: center;
+      border-bottom: 1px dashed #94a3b8;
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+    }
+    .ticket-mockup-title {
+      font-size: 16px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .ticket-mockup-sub {
+      font-size: 11px;
+      color: #475569;
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 600px) {
+      .form-grid-2, .form-grid-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #f59e0b;
+      margin: 20px 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 6px;
+    }
+    .section-title:first-of-type {
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content" style="max-width: 1200px;">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <!-- Encabezado de Página -->
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 14px;">
+        <div>
+          <div class="eyebrow" style="color: #f59e0b; font-weight: 800;">Mantenimiento Exclusivo Administrador</div>
+          <h1 class="page-title" style="margin: 0; font-size: 26px; font-weight: 900;">🏢 Datos de la Empresa y Facturación</h1>
+          <p class="muted" style="margin: 4px 0 0; font-size: 13px;">
+            Información fiscal y comercial que se imprime en los <b>Comprobantes Electrónicos (Boletas / Facturas)</b> y <b>Tickets de Precuenta</b>.
+          </p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <a class="btn btn-secondary" th:href="@{/caja}">💳 Ir a Caja</a>
+          <a class="btn btn-soft" th:href="@{/dashboard}">⌂ Dashboard</a>
+        </div>
+      </div>
+
+      <div class="config-layout">
+
+        <!-- COLUMNA 1: FORMULARIO DE CONFIGURACIÓN -->
+        <div class="config-card">
+          <form th:action="@{/configuracion}" th:object="${config}" method="post">
+            <input type="hidden" th:field="*{idConfiguracion}">
+
+            <!-- 1. IDENTIDAD FISCAL Y COMERCIAL -->
+            <div class="section-title">
+              <span>🧾 Identidad Fiscal y Comercial</span>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label" style="font-weight: 800;">Nombre Comercial / Razón Social *</label>
+                <input type="text" class="form-control" th:field="*{nombre}" id="inputNombre" required maxlength="100"
+                       placeholder="Ej: El Chilpayate" oninput="actualizarVistaPrevia()">
+                <small class="muted">Encabezado principal en tickets y comprobantes.</small>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label" style="font-weight: 800;">RUC Oficial (11 dígitos) *</label>
+                <input type="text" class="form-control" th:field="*{ruc}" id="inputRuc" required maxlength="11" pattern="\d{11}"
+                       placeholder="10876343874" oninput="actualizarVistaPrevia()">
+                <small class="muted">Número de RUC registrado ante SUNAT.</small>
+              </div>
+            </div>
+
+            <!-- 2. UBICACIÓN Y DIRECCIÓN FISCAL -->
+            <div class="section-title">
+              <span>📍 Ubicación y Domicilio Fiscal</span>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label class="form-label" style="font-weight: 800;">Dirección (Calle, Av., Nro) *</label>
+              <input type="text" class="form-control" th:field="*{direccion}" id="inputDireccion" required maxlength="150"
+                     placeholder="Ej: Carlos Wiesse 625" oninput="actualizarVistaPrevia()">
+            </div>
+
+            <div class="form-grid-2" style="margin-bottom: 16px;">
+              <div class="form-group">
+                <label class="form-label" style="font-weight: 700;">Urbanización</label>
+                <input type="text" class="form-control" th:field="*{urbanizacion}" id="inputUrbanizacion" maxlength="100"
+                       placeholder="Ej: Santo Dominguito" oninput="actualizarVistaPrevia()">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-weight: 700;">Distrito</label>
+                <input type="text" class="form-control" th:field="*{distrito}" id="inputDistrito" maxlength="50"
+                       placeholder="Ej: Trujillo" oninput="actualizarVistaPrevia()">
+              </div>
+            </div>
+
+            <div class="form-grid-2" style="margin-bottom: 16px;">
+              <div class="form-group">
+                <label class="form-label" style="font-weight: 700;">Provincia</label>
+                <input type="text" class="form-control" th:field="*{provincia}" id="inputProvincia" maxlength="50"
+                       placeholder="Ej: Trujillo" oninput="actualizarVistaPrevia()">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-weight: 700;">Departamento</label>
+                <input type="text" class="form-control" th:field="*{departamento}" id="inputDepartamento" maxlength="50"
+                       placeholder="Ej: La Libertad" oninput="actualizarVistaPrevia()">
+              </div>
+            </div>
+
+            <!-- 3. HORARIO DE ATENCIÓN Y TURNOS -->
+            <div class="section-title">
+              <span>⏰ Horario de Atención (Turno Operativo)</span>
+            </div>
+
+            <div class="form-grid-2" style="margin-bottom: 24px;">
+              <div class="form-group">
+                <label class="form-label" style="font-weight: 800;">Inicio de Turno *</label>
+                <input type="time" class="form-control" th:field="*{inicioTurno}" id="inputInicioTurno" required
+                       oninput="actualizarVistaPrevia()">
+                <small class="muted">Hora de inicio de atención (Ej: 18:00 - 6:00 PM).</small>
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-weight: 800;">Fin de Turno *</label>
+                <input type="time" class="form-control" th:field="*{finTurno}" id="inputFinTurno" required
+                       oninput="actualizarVistaPrevia()">
+                <small class="muted">Hora de cierre de atención (Ej: 23:30 - 11:30 PM).</small>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; align-items: center; justify-content: flex-end; padding-top: 14px; border-top: 1px solid #f1f5f9;">
+              <button type="submit" class="btn btn-primary" style="padding: 10px 24px; font-size: 15px; font-weight: 800;">
+                💾 Guardar Datos de la Empresa
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- COLUMNA 2: VISTA PREVIA EN VIVO DEL TICKET Y COMPROBANTE -->
+        <div>
+          <div class="preview-card">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+              <span style="font-size: 20px;">👁️</span>
+              <div>
+                <b style="font-size: 15px; color: #0f172a;">Vista Previa en Vivo</b>
+                <div style="font-size: 12px; color: #64748b;">Así se visualizarán los encabezados impresos:</div>
+              </div>
+            </div>
+
+            <!-- MOCKUP DEL TICKET / COMPROBANTE -->
+            <div class="ticket-mockup">
+              <div class="ticket-mockup-header">
+                <div style="font-size: 18px; margin-bottom: 4px;">🍗</div>
+                <div class="ticket-mockup-title" id="prevNombre" th:text="${config.nombre ?: 'EL CHILPAYATE'}">EL CHILPAYATE</div>
+                <div class="ticket-mockup-sub" style="font-weight: 700;">
+                  RUC: <span id="prevRuc" th:text="${config.ruc ?: '10876343874'}">10876343874</span>
+                </div>
+                <div class="ticket-mockup-sub" id="prevDireccion" th:text="${config.direccion ?: 'Carlos Wiesse 625'}">Carlos Wiesse 625</div>
+                <div class="ticket-mockup-sub" id="prevUbicacion" th:text="${(config.urbanizacion != null and !config.urbanizacion.isBlank() ? config.urbanizacion + ' · ' : '') + (config.distrito ?: 'Trujillo') + ' - ' + (config.departamento ?: 'La Libertad')}">
+                  Santo Dominguito · Trujillo - La Libertad
+                </div>
+                <div class="ticket-mockup-sub" style="margin-top: 6px; font-size: 10px; color: #64748b;">
+                  Horario de Atención: <span id="prevHorario" th:text="${(config.inicioTurno != null ? config.inicioTurno : '18:00') + ' a ' + (config.finTurno != null ? config.finTurno : '23:30')}">18:00 a 23:30</span>
+                </div>
+              </div>
+
+              <!-- CUERPO SIMULADO -->
+              <div style="text-align: center; font-size: 11px; margin: 8px 0; font-weight: 800; background: #f1f5f9; padding: 3px;">
+                BOLETA ELECTRÓNICA: B001-000123
+              </div>
+              <div style="font-size: 10px; line-height: 1.4; color: #334155; border-bottom: 1px dashed #cbd5e1; padding-bottom: 6px;">
+                <div>FECHA: 24/10/2026 20:15</div>
+                <div>CLIENTE: Carlos Mendoza</div>
+                <div>ORIGEN: Mesa 4 (Salón Principal)</div>
+              </div>
+              <div style="font-size: 10px; padding: 8px 0; border-bottom: 1px dashed #cbd5e1;">
+                <div style="display: flex; justify-content: space-between;">
+                  <span>1x Alitas Combo x12</span>
+                  <span>S/ 39.00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span>1x Chicha Morada 1L</span>
+                  <span>S/ 12.00</span>
+                </div>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 12px; padding-top: 6px;">
+                <span>TOTAL:</span>
+                <span>S/ 51.00</span>
+              </div>
+              <div style="text-align: center; font-size: 9px; color: #64748b; margin-top: 10px;">
+                ¡Gracias por su preferencia!
+              </div>
+            </div>
+
+            <div style="margin-top: 18px; padding: 12px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; font-size: 12px; color: #92400e;">
+              💡 <b>Nota informativa:</b> Al guardar los cambios, cualquier boleta, factura o precuenta que se imprima o visualice en caja tomará de inmediato esta nueva información.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  function actualizarVistaPrevia() {
+    const nombre = document.getElementById('inputNombre').value || 'EL CHILPAYATE';
+    const ruc = document.getElementById('inputRuc').value || '10876343874';
+    const direccion = document.getElementById('inputDireccion').value || 'Carlos Wiesse 625';
+    const urb = document.getElementById('inputUrbanizacion').value;
+    const dist = document.getElementById('inputDistrito').value || 'Trujillo';
+    const dpto = document.getElementById('inputDepartamento').value || 'La Libertad';
+    const ini = document.getElementById('inputInicioTurno').value || '18:00';
+    const fin = document.getElementById('inputFinTurno').value || '23:30';
+
+    document.getElementById('prevNombre').textContent = nombre.toUpperCase();
+    document.getElementById('prevRuc').textContent = ruc;
+    document.getElementById('prevDireccion').textContent = direccion;
+    
+    let ubiText = (urb ? urb + ' · ' : '') + dist + ' - ' + dpto;
+    document.getElementById('prevUbicacion').textContent = ubiText;
+    document.getElementById('prevHorario').textContent = ini + ' a ' + fin;
+  }
+</script>
+</body>
+</html>

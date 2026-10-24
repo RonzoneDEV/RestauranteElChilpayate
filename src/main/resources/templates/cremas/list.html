@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cremas · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header">
+        <div>
+          <div class="eyebrow">Acompañamientos de Cortesía</div>
+          <h2>Cremas de Casa</h2>
+          <p class="muted">Mayonesa, tártara, ají parrillero, golf, acevichada, etc.</p>
+        </div>
+        <div>
+          <a class="btn btn-primary" th:href="@{/cremas/create}">+ Nueva Crema</a>
+        </div>
+      </div>
+
+      <div class="card" style="max-width: 800px;">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre de la Crema</th>
+                <th>Estado</th>
+                <th style="text-align: right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="c : ${cremas}">
+                <td th:text="${c.idCrema}"></td>
+                <td>
+                  <b th:text="${c.nombre}"></b>
+                </td>
+                <td>
+                  <span th:class="${'badge ' + (c.estado ? 'badge-ok' : 'badge-bad')}"
+                        th:text="${c.estado ? 'ACTIVO' : 'INACTIVO'}"></span>
+                </td>
+                <td class="actions" style="justify-content: flex-end;">
+                  <a class="btn btn-soft btn-sm" th:href="@{'/cremas/edit/' + ${c.idCrema}}">Editar</a>
+                  <a class="btn btn-sm" th:classappend="${c.estado ? 'btn-danger' : 'btn-secondary'}"
+                     th:href="@{'/cremas/delete/' + ${c.idCrema}}"
+                     th:text="${c.estado ? 'Desactivar' : 'Activar'}"
+                     onclick="return confirm('¿Desea cambiar el estado de esta crema?');"></a>
+                </td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(cremas)}">
+                <td colspan="4" class="muted" style="text-align: center; padding: 30px;">No hay cremas registradas.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

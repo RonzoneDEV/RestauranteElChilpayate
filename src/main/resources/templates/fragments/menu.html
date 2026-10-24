@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Menú Lateral Dinámico con Control de Roles (RBAC) -->
+<aside th:fragment="menu" class="sidebar" id="appSidebar">
+  <!-- Cabecera de Marca (Única) -->
+  <div class="brand">
+    <div class="brand-logo-wrap">
+      <img th:src="@{/img/logo.png}" alt="Logo El Chilpayate" class="brand-logo-img">
+    </div>
+    <div class="brand-text">
+      <b>El Chilpayate</b>
+      <small>Gestión del restaurante</small>
+    </div>
+    <!-- Botón de cierre visible únicamente en móvil cuando el drawer está abierto -->
+    <button type="button" class="sidebar-close-btn" onclick="toggleMobileSidebar(false)" aria-label="Cerrar menú" style="display: none;">✕</button>
+  </div>
+
+  <!-- OPERACIÓN PRINCIPAL -->
+  <div class="nav-title">Operación</div>
+  
+  <!-- Dashboard (Admin / Cajero) -->
+  <a class="nav-link" th:if="${session.usuario != null and session.usuario.rol != null and (#strings.toUpperCase(session.usuario.rol.nombre).contains('ADMIN') or #strings.toUpperCase(session.usuario.rol.nombre).contains('CAJ'))}" th:href="@{/dashboard}">
+    ⌂ Dashboard
+  </a>
+
+  <!-- Salón con Mapeo de Mesas (Admin / Mozo / Cajero) -->
+  <a class="nav-link" th:if="${session.usuario != null and session.usuario.rol != null and (#strings.toUpperCase(session.usuario.rol.nombre).contains('ADMIN') or #strings.toUpperCase(session.usuario.rol.nombre).contains('MOZO') or #strings.toUpperCase(session.usuario.rol.nombre).contains('CAJ'))}" th:href="@{/salon}">
+    ▦ Salón (Mesas)
+  </a>
+
+
+  <!-- Delivery (Admin / Cajero / Mozo) -->
+  <a class="nav-link" th:if="${session.usuario != null and session.usuario.rol != null and (#strings.toUpperCase(session.usuario.rol.nombre).contains('ADMIN') or #strings.toUpperCase(session.usuario.rol.nombre).contains('CAJ') or #strings.toUpperCase(session.usuario.rol.nombre).contains('MOZO'))}" th:href="@{/delivery}">
+    🛵 Delivery
+  </a>
+
+  <!-- Monitor de Cocina KDS (Admin / Cocinero) -->
+  <a class="nav-link" th:if="${session.usuario != null and session.usuario.rol != null and (#strings.toUpperCase(session.usuario.rol.nombre).contains('ADMIN') or #strings.toUpperCase(session.usuario.rol.nombre).contains('COCIN'))}" th:href="@{/cocina}">
+    🍳 Monitor de Cocina
+  </a>
+
+  <!-- Stock Express Carta (Admin / Cocinero / Cajero) -->
+  <a class="nav-link" th:if="${session.usuario != null and session.usuario.rol != null and (#strings.toUpperCase(session.usuario.rol.nombre).contains('ADMIN') or #strings.toUpperCase(session.usuario.rol.nombre).contains('COCIN') or #strings.toUpperCase(session.usuario.rol.nombre).contains('CAJ'))}" th:href="@{/stock/rapido}">
+    ⚡ Stock Express (Carta)
+  </a>
+
+  <!-- Despacho de Mozo (Admin / Mozo) -->
+  <a class="nav-link" th:if="${session.usuario != null and session.usuario.rol != null and (#strings.toUpperCase(session.usuario.rol.nombre).contains('ADMIN') or #strings.toUpperCase(session.usuario.rol.nombre).contains('MOZO'))}" th:href="@{/despacho}">
+    🛎 Despacho de Mozo
+  </a>
+
+  <!-- Terminal de Caja con Mesas Mapeadas (Admin / Cajero) -->
+  <a class="nav-link" th:if="${session.usuario != null and session.usuario.rol != null and (#strings.toUpperCase(session.usuario.rol.nombre).contains('ADMIN') or #strings.toUpperCase(session.usuario.rol.nombre).contains('CAJ'))}" th:href="@{/caja/terminal}">
+    🖥 Terminal de Caja
+  </a>
+
+
+  <!-- Registro de Gastos y Compras (Admin / Cajero) -->
+  <a class="nav-link" th:if="${session.usuario != null and session.usuario.rol != null and (#strings.toUpperCase(session.usuario.rol.nombre).contains('ADMIN') or #strings.toUpperCase(session.usuario.rol.nombre).contains('CAJ'))}" th:href="@{/gastos}">
+    ↘ Gastos y Compras
+  </a>
+
+  <!-- MANTENEDORES (EXCLUSIVO ADMINISTRADOR) -->
+  <th:block th:if="${session.usuario != null and session.usuario.rol != null and #strings.toUpperCase(session.usuario.rol.nombre).contains('ADMIN')}">
+    <div class="nav-title" style="color: #f59e0b;">Mantenimientos (Admin)</div>
+    <a class="nav-link" th:href="@{/mesas}">▦ Mantenedor de Mesas</a>
+    <a class="nav-link" th:href="@{/productos}">🍗 Productos</a>
+    <a class="nav-link" th:href="@{/categorias}">📂 Categorías (Alitas/Salsa)</a>
+    <a class="nav-link" th:href="@{/parametros-carta}">⚙️ Parámetros de la Carta</a>
+    <a class="nav-link" th:href="@{/cremas}">🥣 Cremas</a>
+    <a class="nav-link" th:href="@{/clientes}">👥 Clientes</a>
+    <a class="nav-link" th:href="@{/proveedores}">🚚 Proveedores</a>
+    <a class="nav-link" th:href="@{/usuarios}">🔐 Usuarios del Sistema</a>
+    <a class="nav-link" th:href="@{/configuracion}">🏢 Datos de la Empresa</a>
+
+    <div class="nav-title" style="color: #60a5fa;">Auditoría y Gestión</div>
+    <a class="nav-link" th:href="@{/stock/rapido}">⚡ Control Rápido de Stock</a>
+    <a class="nav-link" th:href="@{/stock}">📦 Movimiento de Stock (Kardex)</a>
+    <a class="nav-link" th:href="@{/incidentes}">⚠️ Consultas de Incidentes</a>
+    <a class="nav-link" th:href="@{/reportes}">📊 Reportes en General</a>
+    <a class="nav-link" th:href="@{/caja/cierre}">🧮 Cierre Diario de Caja</a>
+  </th:block>
+</aside>
+
+<!-- Fragmento de Barra Superior (Topbar) -->
+<header th:fragment="topbar" class="topbar">
+  <div style="display: flex; align-items: center; gap: 12px;">
+    <!-- Botón Hamburguesa para Móviles y Tablets (oculto en escritorio) -->
+    <button type="button" class="mobile-menu-btn" onclick="toggleMobileSidebar(true)" aria-label="Abrir menú" title="Menú Principal" style="display: none;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+    </button>
+
+    <a th:href="@{/salon}" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit;">
+      <img th:src="@{/img/logo.png}" alt="El Chilpayate" class="topbar-logo" style="width: 32px; height: 32px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));">
+      <div>
+        <b style="font-size: 15px; display: block; line-height: 1.2;">El Chilpayate</b>
+        <span class="muted topbar-subtitle" style="font-size: 11px;">Operación en tiempo real</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- Accesos Rápidos para Mozo / Operación en Tablets y Móviles -->
+  <div class="topbar-quick-nav">
+    <a th:href="@{/salon}" class="topbar-nav-pill" title="Ir al Salón de Mesas">▦ Salón</a>
+    <a th:href="@{/despacho}" class="topbar-nav-pill" title="Ir a Despacho de Platos">🛎 Despacho</a>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <span th:if="${session.usuario != null}" class="topbar-user-pill">
+      <b th:text="${session.usuario.nombres != null ? session.usuario.nombres : session.usuario.username}"></b>
+      <span class="badge"
+            th:style="${session.usuario.rol != null and #strings.toUpperCase(session.usuario.rol.nombre).contains('ADMIN') ? 'background: #fef3c7; color: #92400e; border: 1px solid #fcd34d;' : 'background: #e0f2fe; color: #0369a1;'}"
+            th:if="${session.usuario.rol != null}"
+            th:text="${session.usuario.rol.nombre}"></span>
+    </span>
+    <a class="btn btn-soft btn-sm" th:href="@{/logout}">Salir</a>
+  </div>
+
+  <!-- Backdrop overlay para cerrar drawer móvil -->
+  <div id="sidebarBackdrop" class="sidebar-backdrop" onclick="toggleMobileSidebar(false)"></div>
+
+  <script>
+    function toggleMobileSidebar(open) {
+      const sb = document.querySelector('.sidebar');
+      const bd = document.getElementById('sidebarBackdrop');
+      if (!sb) return;
+      const shouldOpen = (open !== undefined) ? open : !sb.classList.contains('open');
+      if (shouldOpen) {
+        sb.classList.add('open');
+        if (bd) bd.classList.add('open');
+        document.body.classList.add('sidebar-open-lock');
+      } else {
+        sb.classList.remove('open');
+        if (bd) bd.classList.remove('open');
+        document.body.classList.remove('sidebar-open-lock');
+      }
+    }
+  </script>
+</header>
+
+<!-- Fragmento de Alertas Flash (Éxito y Error) -->
+<div th:fragment="alerts">
+  <div class="flash flash-success" th:if="${success}" th:text="${success}"></div>
+  <div class="flash flash-error" th:if="${error}" th:text="${error}"></div>
+</div>
+
+</body>
+</html>

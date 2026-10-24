@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${esPrecuentaDividida ? 'Cobrar Precuenta #' + precuenta.numeroPrecuenta + ' · El Chilpayate' : 'Cobrar Pedido #' + pedido.codigo + ' · El Chilpayate'}"></title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+  <style>
+    .payment-tab-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      background: #f1f5f9;
+      padding: 6px;
+      border-radius: 14px;
+    }
+    .payment-tab {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      background: transparent;
+      color: #64748b;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .payment-tab.active {
+      background: #ffffff;
+      color: #0f172a;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .split-row {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 1fr 40px;
+      gap: 10px;
+      align-items: center;
+    }
+    .calc-box {
+      background: #0f172a;
+      color: #ffffff;
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 18px;
+    }
+    .calc-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+    .calc-row.total-row {
+      font-size: 18px;
+      font-weight: 900;
+      border-top: 1px solid #334155;
+      padding-top: 8px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content" style="max-width: 1400px;">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px;">
+        <div>
+          <div class="eyebrow" style="color: #22c55e;">Caja y Facturación</div>
+          
+          <h1 th:if="${not esPrecuentaDividida}" class="page-title" style="margin: 4px 0;">
+            Cobrar Comanda Completa <span th:text="${pedido.codigo}"></span>
+          </h1>
+          <h1 th:if="${esPrecuentaDividida}" class="page-title" style="margin: 4px 0;">
+            Cobrar Precuenta #<span th:text="${precuenta.numeroPrecuenta}"></span> 
+            <span style="font-size: 18px; color: #64748b;" th:text="'(' + ${precuenta.codigo} + ')'"></span>
+          </h1>
+          
+          <p class="muted">
+            <span th:if="${esPrecuentaDividida}">Liquidación individual por productos para la comanda <b th:text="${pedido.codigo}"></b>.</span>
+            <span th:if="${not esPrecuentaDividida}">Liquidación total de la comanda con soporte de pago simple o combinado.</span>
+          </p>
+        </div>
+        <div>
+          <a class="btn btn-secondary" th:href="@{/caja/terminal}">← Volver al Terminal de Caja</a>
+        </div>
+      </div>
+
+      <!-- Requisito 5: Barra de Precuentas de la Mesa en la Vista de Pagos -->
+      <div th:if="${todasLasPrecuentas != null and #lists.size(todasLasPrecuentas) > 1}"
+           style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px 18px; margin-bottom: 22px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <b style="font-size: 13px; color: #334155; text-transform: uppercase; letter-spacing: 0.5px;">
+            📑 Precuentas de esta Mesa / Comanda ([[${#lists.size(todasLasPrecuentas)}]] subcuentas):
+          </b>
+          <span class="muted" style="font-size: 12px;">Haz clic en una subcuenta para cobrarla</span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+          <a th:each="p : ${todasLasPrecuentas}"
+             th:href="@{'/caja/pago/precuenta/' + ${p.idPrecuenta}}"
+             th:style="${'display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 10px; text-decoration: none; font-size: 13px; font-weight: 700; border: 2px solid ' +
+                       ((precuenta != null and precuenta.idPrecuenta == p.idPrecuenta) ? '#22c55e; background: #f0fdf4; color: #15803d;' :
+                       (p.estado != null and p.estado.name() == 'PAGADA' ? '#cbd5e1; background: #f8fafc; color: #64748b; opacity: 0.75;' : '#e2e8f0; background: #ffffff; color: #0f172a;'))}">
+            <span th:text="'#' + ${p.numeroPrecuenta}"></span>
+            <span th:text="'S/ ' + ${#numbers.formatDecimal(p.total, 1, 2)}"></span>
+            <span th:if="${p.estado != null and p.estado.name() == 'PAGADA'}" style="color: #16a34a; font-weight: 800;">✓ PAGADA</span>
+            <span th:if="${p.estado != null and p.estado.name() == 'PENDIENTE' and (precuenta != null and precuenta.idPrecuenta == p.idPrecuenta)}"
+                  style="background: #22c55e; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px;">Cobrando ahora</span>
+            <span th:if="${p.estado != null and p.estado.name() == 'PENDIENTE' and (precuenta == null or precuenta.idPrecuenta != p.idPrecuenta)}"
+                  style="color: #b45309; font-size: 11px;">(Pendiente)</span>
+          </a>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; align-items: start;">
+        
+        <!-- RESUMEN DE LA CUENTA Y PLATOS -->
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0;">
+              <span th:if="${esPrecuentaDividida}">Ítems de esta Precuenta</span>
+              <span th:if="${not esPrecuentaDividida}">Detalle del Consumo</span>
+            </h3>
+            <span th:if="${pedido.mesa != null}" class="badge badge-bad" style="font-size: 14px;"
+                  th:text="'MESA ' + ${pedido.mesa.numero}"></span>
+            <span th:if="${pedido.mesa == null}" class="badge" style="background:#7c3aed; color:#fff; font-size: 14px;">DELIVERY</span>
+          </div>
+
+          <div style="font-size: 13px; color: #64748b; margin-bottom: 14px;">
+            Atendido por: <b th:text="${pedido.usuario != null ? (pedido.usuario.nombres != null ? pedido.usuario.nombres : pedido.usuario.username) : 'Mozo'}"></b>
+            · Hora: <span th:text="${#temporals.format(pedido.fecha, 'dd/MM/yyyy HH:mm')}"></span>
+          </div>
+
+          <div class="table-wrap" style="border: none;">
+            <table class="table" style="font-size: 13px;">
+              <thead>
+                <tr>
+                  <th>Plato / Detalle</th>
+                  <th style="text-align: right;">Importe</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Si es precuenta dividida: listar detalles de la precuenta -->
+                <th:block th:if="${esPrecuentaDividida}">
+                  <tr th:each="pd : ${precuenta.detalles}">
+                    <td>
+                      <b th:text="${pd.detallePedido.producto != null ? pd.detallePedido.producto.nombre : 'Producto'}"></b>
+                      
+                      <div th:if="${pd.detallePedido.nota != null and !pd.detallePedido.nota.isBlank()}" style="font-size: 11px; color: #0284c7; font-style: italic;">
+                        📝 Nota: <span th:text="${pd.detallePedido.nota}"></span>
+                      </div>
+
+                      <div th:if="${pd.detallePedido.detallePedidoCrema != null and not #lists.isEmpty(pd.detallePedido.detallePedidoCrema)}" style="font-size: 11px; color: #b45309;">
+                        🥣 Cremas: <span th:each="dc, iter : ${pd.detallePedido.detallePedidoCrema}" th:text="${dc.crema != null ? dc.crema.nombre + (iter.last ? '' : ', ') : ''}"></span>
+                      </div>
+
+                      <div th:if="${pd.detallePedido.detallePedidoSalsa != null and not #lists.isEmpty(pd.detallePedido.detallePedidoSalsa)}" style="font-size: 11px; color: #dc2626;">
+                        🌶 Salsas: <span th:each="ds, iter : ${pd.detallePedido.detallePedidoSalsa}" th:text="${ds.salsa != null ? ds.salsa.nombre + (iter.last ? '' : ', ') : ''}"></span>
+                      </div>
+                    </td>
+                    <td style="text-align: right; font-weight: 800; font-size: 14px;"
+                        th:text="'S/ ' + ${#numbers.formatDecimal(pd.precio, 1, 2)}"></td>
+                  </tr>
+                </th:block>
+
+                <!-- Si es pedido completo -->
+                <th:block th:if="${not esPrecuentaDividida}">
+                  <tr th:each="d : ${pedido.detallePedido}" th:if="${d.estado.name() != 'ANULADO'}">
+                    <td>
+                      <b th:text="${d.producto != null ? d.producto.nombre : 'Producto'}"></b>
+                      
+                      <div th:if="${d.nota != null and !d.nota.isBlank()}" style="font-size: 11px; color: #0284c7; font-style: italic;">
+                        📝 Nota: <span th:text="${d.nota}"></span>
+                      </div>
+
+                      <div th:if="${d.detallePedidoCrema != null and not #lists.isEmpty(d.detallePedidoCrema)}" style="font-size: 11px; color: #b45309;">
+                        🥣 Cremas: <span th:each="dc, iter : ${d.detallePedidoCrema}" th:text="${dc.crema != null ? dc.crema.nombre + (iter.last ? '' : ', ') : ''}"></span>
+                      </div>
+
+                      <div th:if="${d.detallePedidoSalsa != null and not #lists.isEmpty(d.detallePedidoSalsa)}" style="font-size: 11px; color: #dc2626;">
+                        🌶 Salsas: <span th:each="ds, iter : ${d.detallePedidoSalsa}" th:text="${ds.salsa != null ? ds.salsa.nombre + (iter.last ? '' : ', ') : ''}"></span>
+                      </div>
+                    </td>
+                    <td style="text-align: right; font-weight: 800; font-size: 14px;"
+                        th:text="'S/ ' + ${#numbers.formatDecimal(d.precioActual, 1, 2)}"></td>
+                  </tr>
+                </th:block>
+
+                <tr th:if="${pedido.pedidoDelivery != null and pedido.pedidoDelivery.costoDelivery != null and pedido.pedidoDelivery.costoDelivery > 0}">
+                  <td><b>Costo de Envío (Delivery)</b></td>
+                  <td style="text-align: right; font-weight: 800;" th:text="'S/ ' + ${#numbers.formatDecimal(pedido.pedidoDelivery.costoDelivery, 1, 2)}"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Total a Cobrar Destacado -->
+          <div style="margin-top: 18px; padding: 18px; background: #fffdf5; border: 2px dashed #f59e0b; border-radius: 14px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <span style="font-size: 13px; font-weight: 800; text-transform: uppercase; color: #78350f;">
+                <span th:if="${esPrecuentaDividida}">TOTAL PRECUENTA</span>
+                <span th:if="${not esPrecuentaDividida}">TOTAL A LIQUIDAR</span>
+              </span>
+              <small style="display: block; color: #92400e;">(Incluye IGV 18%)</small>
+            </div>
+            <b style="font-size: 32px; color: #b45309;" th:text="'S/ ' + ${#numbers.formatDecimal(total, 1, 2)}"></b>
+          </div>
+
+          <div th:if="${pedido.mesa != null}" style="margin-top: 14px; font-size: 12px; color: #15803d; background: #f0fdf4; padding: 10px; border-radius: 8px;">
+            <span th:if="${not esPrecuentaDividida}">✨ Al confirmar el pago completo, la <b>Mesa #[[${pedido.mesa.numero}]]</b> se liberará automáticamente en el Salón.</span>
+            <span th:if="${esPrecuentaDividida}">✨ Al pagar la última precuenta de esta mesa, la <b>Mesa #[[${pedido.mesa.numero}]]</b> quedará libre automáticamente.</span>
+          </div>
+        </div>
+
+        <!-- FORMULARIO DE COBRO CON SOPORTE DE PAGO SIMPLE O SPLIT (COMBINADO) -->
+        <div class="card">
+          <h3 style="margin-bottom: 14px;">Opciones de Liquidación y Pago</h3>
+
+          <!-- Selector de Modo de Pago: Simple vs Mixto/Combinado -->
+          <div class="payment-tab-group">
+            <button type="button" class="payment-tab active" id="tabSimple" onclick="cambiarModoPago('SIMPLE')">
+              💳 Pago Único (1 Medio)
+            </button>
+            <button type="button" class="payment-tab" id="tabSplit" onclick="cambiarModoPago('SPLIT')">
+              🔄 Pago Combinado (Efectivo + Yape / Mixto)
+            </button>
+          </div>
+
+          <form th:action="${esPrecuentaDividida ? '/caja/pago/precuenta/' + precuenta.idPrecuenta : '/caja/pago/' + pedido.idPedido}"
+                method="post" id="formPago" onsubmit="return validarPago();">
+            
+            <!-- MODO 1: PAGO ÚNICO -->
+            <div id="seccionPagoSimple">
+              <div class="form-grid">
+                <div class="full">
+                  <label class="form-label">Método de Pago *</label>
+                  <select class="form-select" name="idMetodoPago" id="selectMetodoSimple">
+                    <option th:each="m : ${metodosPago}" th:value="${m.idMetodoPago}" th:text="${m.nombre}"></option>
+                  </select>
+                </div>
+
+                <div class="full">
+                  <label class="form-label">N° de Operación / Referencia (Digital)</label>
+                  <input class="form-control" name="numeroOperacion" placeholder="Ej: Yape 839201, Plin 123456, Visa Ref #9876">
+                </div>
+              </div>
+            </div>
+
+            <!-- MODO 2: PAGO COMBINADO / SPLIT (Efectivo + Yape etc.) -->
+            <div id="seccionPagoSplit" style="display: none;">
+              <p class="muted" style="font-size: 13px; margin: 0 0 12px;">
+                Distribuye el monto entre diferentes medios de pago (ejemplo: Efectivo + Yape).
+              </p>
+
+              <div id="contenedorSplitRows">
+                <!-- Fila 1 por defecto (Efectivo) -->
+                <div class="split-row">
+                  <div>
+                    <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">Método 1</label>
+                    <select class="form-select" name="splitMetodoPago" style="padding: 8px;">
+                      <option th:each="m : ${metodosPago}" th:value="${m.idMetodoPago}" th:text="${m.nombre}"></option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">Monto (S/)</label>
+                    <input type="number" step="0.50" min="0" class="form-control split-monto-input" name="splitMonto"
+                           style="padding: 8px; font-weight: 800;" placeholder="0.00" oninput="calcularTotalSplit()">
+                  </div>
+                  <div>
+                    <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">N° Operación</label>
+                    <input type="text" class="form-control" name="splitNumeroOperacion" style="padding: 8px;" placeholder="Opcional">
+                  </div>
+                  <div style="text-align: center; margin-top: 16px;">
+                    <button type="button" class="btn-trash" onclick="eliminarFilaSplit(this)" style="padding: 6px 10px;">✕</button>
+                  </div>
+                </div>
+
+                <!-- Fila 2 por defecto (Yape) -->
+                <div class="split-row">
+                  <div>
+                    <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">Método 2</label>
+                    <select class="form-select" name="splitMetodoPago" style="padding: 8px;">
+                      <option th:each="m, iter : ${metodosPago}" th:value="${m.idMetodoPago}" th:text="${m.nombre}"
+                              th:selected="${iter.index == 1}"></option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">Monto (S/)</label>
+                    <input type="number" step="0.50" min="0" class="form-control split-monto-input" name="splitMonto"
+                           style="padding: 8px; font-weight: 800;" placeholder="0.00" oninput="calcularTotalSplit()">
+                  </div>
+                  <div>
+                    <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">N° Operación</label>
+                    <input type="text" class="form-control" name="splitNumeroOperacion" style="padding: 8px;" placeholder="Ej: 123456">
+                  </div>
+                  <div style="text-align: center; margin-top: 16px;">
+                    <button type="button" class="btn-trash" onclick="eliminarFilaSplit(this)" style="padding: 6px 10px;">✕</button>
+                  </div>
+                </div>
+              </div>
+
+              <button type="button" class="btn btn-soft btn-sm" onclick="agregarFilaSplit()" style="margin-top: 6px;">
+                + Agregar otro medio de pago
+              </button>
+
+              <!-- Resumen Calculado en Vivo del Split -->
+              <div class="calc-box">
+                <div class="calc-row">
+                  <span>Total de la Cuenta:</span>
+                  <b th:text="'S/ ' + ${#numbers.formatDecimal(total, 1, 2)}"></b>
+                </div>
+                <div class="calc-row">
+                  <span>Total Asignado:</span>
+                  <b id="calcTotalAsignado">S/ 0.00</b>
+                </div>
+                <div class="calc-row total-row">
+                  <span id="labelDiferencia">Faltante por Cubrir:</span>
+                  <span id="calcDiferencia" style="color: #f87171;">S/ [[${#numbers.formatDecimal(total, 1, 2)}]]</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- DATOS DEL COMPROBANTE -->
+            <div style="margin-top: 22px; border-top: 1px solid #e2e8f0; padding-top: 18px;">
+              <h4 style="margin: 0 0 12px; font-size: 15px;">Emisión de Comprobante</h4>
+
+              <div class="form-grid">
+                <div>
+                  <label class="form-label">Tipo de Comprobante *</label>
+                  <select class="form-select" name="tipoComprobante" id="selectTipoComprobante" required>
+                    <option value="BOLETA" selected>Boleta de Venta</option>
+                    <option value="NOTA_VENTA">Nota de Venta</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="form-label">N° Comprobante <span class="muted" style="font-weight: 400;">(Opcional - automático)</span></label>
+                  <input class="form-control" name="numeroComprobante" placeholder="Ej: B001-00123">
+                </div>
+
+                <div>
+                  <label class="form-label">Nombre del Cliente <span class="muted" style="font-weight: 400;">(Opcional)</span></label>
+                  <input class="form-control" name="nombreCliente"
+                         th:value="${pedido.cliente != null ? pedido.cliente.nombre : ''}"
+                         placeholder="Opcional (Dejar en blanco si es casual)">
+                </div>
+
+                <div>
+                  <label class="form-label">DNI / RUC del Cliente <span class="muted" style="font-weight: 400;">(Opcional)</span></label>
+                  <input class="form-control" name="dniRuc" id="inputDniRuc"
+                         th:value="${pedido.cliente != null ? pedido.cliente.documento : ''}"
+                         placeholder="Opcional (Solo requerido para Factura)">
+                </div>
+              </div>
+            </div>
+
+            <!-- BOTÓN DE CONFIRMACIÓN DE COBRO -->
+            <div style="margin-top: 24px;">
+              <button class="btn btn-primary" id="btnConfirmarPago" style="width: 100%; font-size: 16px; padding: 14px; background: #22c55e; color: #052e16;" type="submit">
+                ✓ Confirmar Pago y Emitir Comprobante
+              </button>
+            </div>
+
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Template oculto de fila para duplicar en JS -->
+<div id="templateFilaSplit" style="display: none;">
+  <div class="split-row">
+    <div>
+      <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">Método</label>
+      <select class="form-select" name="splitMetodoPago" style="padding: 8px;">
+        <option th:each="m : ${metodosPago}" th:value="${m.idMetodoPago}" th:text="${m.nombre}"></option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">Monto (S/)</label>
+      <input type="number" step="0.50" min="0" class="form-control split-monto-input" name="splitMonto"
+             style="padding: 8px; font-weight: 800;" placeholder="0.00" oninput="calcularTotalSplit()">
+    </div>
+    <div>
+      <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">N° Operación</label>
+      <input type="text" class="form-control" name="splitNumeroOperacion" style="padding: 8px;" placeholder="Opcional">
+    </div>
+    <div style="text-align: center; margin-top: 16px;">
+      <button type="button" class="btn-trash" onclick="eliminarFilaSplit(this)" style="padding: 6px 10px;">✕</button>
+    </div>
+  </div>
+</div>
+
+<script th:inline="javascript">
+  const TOTAL_CUENTA = /*[[${total}]]*/ 0.0;
+  let modoActual = 'SIMPLE';
+
+  function cambiarModoPago(modo) {
+    modoActual = modo;
+    const tabSimple = document.getElementById('tabSimple');
+    const tabSplit = document.getElementById('tabSplit');
+    const secSimple = document.getElementById('seccionPagoSimple');
+    const secSplit = document.getElementById('seccionPagoSplit');
+
+    if (modo === 'SPLIT') {
+      tabSimple.classList.remove('active');
+      tabSplit.classList.add('active');
+      secSimple.style.display = 'none';
+      secSplit.style.display = 'block';
+
+      // Desactivar select simple
+      document.getElementById('selectMetodoSimple').disabled = true;
+      document.querySelectorAll('#seccionPagoSplit input, #seccionPagoSplit select').forEach(el => el.disabled = false);
+
+      calcularTotalSplit();
+    } else {
+      tabSplit.classList.remove('active');
+      tabSimple.classList.add('active');
+      secSplit.style.display = 'none';
+      secSimple.style.display = 'block';
+
+      // Activar select simple y deshabilitar los del split para que no se envíen vacíos
+      document.getElementById('selectMetodoSimple').disabled = false;
+      document.querySelectorAll('#seccionPagoSplit input, #seccionPagoSplit select').forEach(el => el.disabled = true);
+    }
+  }
+
+  function agregarFilaSplit() {
+    const tpl = document.getElementById('templateFilaSplit').firstElementChild.cloneNode(true);
+    document.getElementById('contenedorSplitRows').appendChild(tpl);
+    calcularTotalSplit();
+  }
+
+  function eliminarFilaSplit(btn) {
+    const rows = document.querySelectorAll('#contenedorSplitRows .split-row');
+    if (rows.length <= 1) {
+      alert('Debe mantener al menos un medio de pago en pago combinado.');
+      return;
+    }
+    btn.closest('.split-row').remove();
+    calcularTotalSplit();
+  }
+
+  function calcularTotalSplit() {
+    let suma = 0;
+    document.querySelectorAll('#contenedorSplitRows .split-monto-input').forEach(inp => {
+      if (!inp.disabled) {
+        const val = parseFloat(inp.value) || 0;
+        suma += val;
+      }
+    });
+
+    document.getElementById('calcTotalAsignado').textContent = 'S/ ' + suma.toFixed(2);
+    const dif = TOTAL_CUENTA - suma;
+    const label = document.getElementById('labelDiferencia');
+    const valDif = document.getElementById('calcDiferencia');
+
+    if (dif > 0.01) {
+      label.textContent = 'Faltante por Cubrir:';
+      valDif.textContent = 'S/ ' + dif.toFixed(2);
+      valDif.style.color = '#f87171';
+    } else if (dif < -0.01) {
+      label.textContent = 'Vuelto al Cliente (Efectivo):';
+      valDif.textContent = 'S/ ' + Math.abs(dif).toFixed(2);
+      valDif.style.color = '#38bdf8';
+    } else {
+      label.textContent = 'Cuenta Cuadrada Exacta:';
+      valDif.textContent = 'S/ 0.00 (Listo)';
+      valDif.style.color = '#4ade80';
+    }
+  }
+
+  function validarPago() {
+    const tipo = document.getElementById('selectTipoComprobante').value;
+    const doc = document.getElementById('inputDniRuc').value.trim();
+    if (tipo === 'FACTURA') {
+      if (!doc || doc.length !== 11) {
+        alert('Para emitir Factura Electrónica es obligatorio ingresar un RUC válido de 11 dígitos.');
+        document.getElementById('inputDniRuc').focus();
+        return false;
+      }
+    }
+
+    if (modoActual === 'SPLIT') {
+      let suma = 0;
+      document.querySelectorAll('#contenedorSplitRows .split-monto-input').forEach(inp => {
+        if (!inp.disabled) {
+          suma += parseFloat(inp.value) || 0;
+        }
+      });
+
+      if (suma < TOTAL_CUENTA - 0.05) {
+        alert('El total asignado (S/ ' + suma.toFixed(2) + ') no cubre el total de la cuenta (S/ ' + TOTAL_CUENTA.toFixed(2) + ').');
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Inicialización
+  cambiarModoPago('SIMPLE');
+</script>
+</body>
+</html>

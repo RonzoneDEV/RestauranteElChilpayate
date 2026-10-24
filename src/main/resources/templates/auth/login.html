@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Iniciar Sesión · El Chilpayate</title>
+  <link rel="icon" type="image/png" th:href="@{/img/logo.png}">
+  
+  <!-- Tipografía moderna Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #f59e0b;
+      --primary-hover: #d97706;
+      --primary-dark: #b45309;
+      --accent-red: #dc2626;
+      --bg-dark: #170f0a;
+      --bg-surface: #23160e;
+      --text-main: #1f1610;
+      --text-muted: #7c6f64;
+      --border-color: #ebdcd0;
+      --card-bg: rgba(255, 255, 255, 0.98);
+      --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 20px 40px -15px rgba(27, 14, 5, 0.22);
+      --radius-sm: 10px;
+      --radius-md: 14px;
+      --radius-lg: 24px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      display: flex;
+      align-items: stretch;
+      overflow-x: hidden;
+    }
+
+    /* Contenedor Principal Split */
+    .login-wrapper {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      width: 100%;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* ========================================================
+       SECCIÓN IZQUIERDA: HERO DE MARCA (EL CHILPAYATE)
+       ======================================================== */
+    .hero-panel {
+      position: relative;
+      background: linear-gradient(135deg, #1f1107 0%, #351a0c 45%, #5a260d 100%);
+      color: #ffffff;
+      padding: 60px 70px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+
+    /* Efectos de Iluminación Ambiental */
+    .hero-panel::before {
+      content: '';
+      position: absolute;
+      width: 520px;
+      height: 520px;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, rgba(220, 38, 38, 0.12) 50%, transparent 70%);
+      top: -80px;
+      left: -80px;
+      border-radius: 50%;
+      filter: blur(40px);
+      pointer-events: none;
+      animation: floatAura 8s ease-in-out infinite alternate;
+    }
+
+    .hero-panel::after {
+      content: '';
+      position: absolute;
+      width: 480px;
+      height: 480px;
+      background: radial-gradient(circle, rgba(234, 88, 12, 0.2) 0%, rgba(180, 83, 9, 0.08) 60%, transparent 70%);
+      bottom: -60px;
+      right: -60px;
+      border-radius: 50%;
+      filter: blur(50px);
+      pointer-events: none;
+      animation: floatAura 10s ease-in-out infinite alternate-reverse;
+    }
+
+    @keyframes floatAura {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(30px, 40px) scale(1.12); }
+    }
+
+    .hero-header {
+      position: relative;
+      z-index: 2;
+    }
+
+    .brand-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #fef08a;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .brand-pill-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 10px #22c55e;
+      animation: pulseDot 2s infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    /* Vitrina Central con el Logo Oficial */
+    .hero-body {
+      position: relative;
+      z-index: 2;
+      margin: 40px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .hero-logo-container {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      border-radius: 36px;
+      background: radial-gradient(circle at 30% 30%, #ffffff 0%, #fff7ed 70%, #ffedd5 100%);
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 4px rgba(245, 158, 11, 0.4);
+      margin-bottom: 28px;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
+      animation: heroFloat 5s ease-in-out infinite;
+    }
+
+    .hero-logo-container:hover {
+      transform: scale(1.06) rotate(-2deg);
+      box-shadow: 0 28px 50px rgba(0, 0, 0, 0.5), 0 0 0 4px var(--primary);
+    }
+
+    @keyframes heroFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .hero-logo-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.15));
+    }
+
+    .hero-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 52px;
+      font-weight: 900;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      margin-bottom: 14px;
+      background: linear-gradient(135deg, #ffffff 30%, #fef08a 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-desc {
+      font-size: 18px;
+      line-height: 1.55;
+      color: #fed7aa;
+      max-width: 540px;
+      font-weight: 500;
+      margin-bottom: 32px;
+    }
+
+    /* Grilla de Características Rápidas */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .feature-card {
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+
+    .feature-card:hover {
+      background: rgba(255, 255, 255, 0.13);
+      transform: translateY(-2px);
+    }
+
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(245, 158, 11, 0.2);
+      color: #fef08a;
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .feature-text h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 2px;
+    }
+
+    .feature-text p {
+      font-size: 12px;
+      color: #fdba74;
+      line-height: 1.35;
+    }
+
+    .hero-footer {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* ========================================================
+       SECCIÓN DERECHA: FORMULARIO DE ACCESO (CARD UI/UX)
+       ======================================================== */
+    .form-panel {
+      background: linear-gradient(180deg, #fffaf5 0%, #fbf5ee 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 30px;
+      position: relative;
+    }
+
+    .form-card {
+      width: 100%;
+      max-width: 440px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 40px 36px;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      animation: cardAppear 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes cardAppear {
+      from { opacity: 0; transform: translateY(20px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Cabecera Móvil (solo visible en pantallas chicas) */
+    .mobile-brand {
+      display: none;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .mobile-logo-wrap {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      background: #fff;
+      padding: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 0 0 2px var(--primary);
+      display: grid;
+      place-items: center;
+    }
+
+    .mobile-logo-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .mobile-brand-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.1;
+    }
+
+    .mobile-brand-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* Textos del Formulario */
+    .form-header {
+      margin-bottom: 28px;
+    }
+
+    .form-header-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--primary-dark);
+      background: #fef3c7;
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+
+    .form-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.01em;
+      margin-bottom: 6px;
+    }
+
+    .form-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    /* Alerta de Error / Notificación */
+    .alert-box {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      color: #991b1b;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 22px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      animation: alertShake 0.4s ease;
+    }
+
+    .alert-box.alert-warning {
+      background: #fffbeb;
+      border-color: #fde68a;
+      color: #92400e;
+    }
+
+    @keyframes alertShake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-5px); }
+      40%, 80% { transform: translateX(5px); }
+    }
+
+    .alert-icon {
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Grupos de Inputs */
+    .input-group {
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .input-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: #3b2c22;
+      margin-bottom: 8px;
+    }
+
+    .input-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-box .field-icon {
+      position: absolute;
+      left: 14px;
+      color: #9ca3af;
+      pointer-events: none;
+      transition: color 0.2s ease;
+    }
+
+    .input-field {
+      width: 100%;
+      height: 48px;
+      padding: 0 16px 0 44px;
+      font-family: inherit;
+      font-size: 15px;
+      color: #1f2937;
+      background: #ffffff;
+      border: 1.5px solid #d6c7b9;
+      border-radius: var(--radius-md);
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .input-field:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.18);
+      background: #ffffff;
+    }
+
+    .input-field:focus + .field-icon {
+      color: var(--primary-dark);
+    }
+
+    /* Botón Mostrar / Ocultar Contraseña */
+    .toggle-password {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: #9ca3af;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s ease, background 0.2s ease;
+    }
+
+    .toggle-password:hover {
+      color: #4b5563;
+      background: #f3f4f6;
+    }
+
+    /* Aviso de Bloq Mayús */
+    .caps-indicator {
+      display: none;
+      font-size: 11px;
+      font-weight: 700;
+      color: #b45309;
+      background: #fef3c7;
+      padding: 4px 8px;
+      border-radius: 6px;
+      margin-top: 6px;
+    }
+
+    /* Fila de Utilidades (Recordar Usuario) */
+    .form-extras {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 18px 0 24px;
+      font-size: 13px;
+    }
+
+    .remember-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      color: #57483c;
+      font-weight: 600;
+    }
+
+    .remember-checkbox {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--primary-dark);
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .system-status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #047857;
+      background: #ecfdf5;
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+
+    /* Botón Submit Principal */
+    .btn-submit {
+      width: 100%;
+      height: 50px;
+      border: none;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 8px 20px -4px rgba(234, 88, 12, 0.4);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px -4px rgba(234, 88, 12, 0.5);
+      filter: brightness(1.04);
+    }
+
+    .btn-submit:active {
+      transform: translateY(0);
+      box-shadow: 0 4px 10px rgba(234, 88, 12, 0.4);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Chips de Selección Rápida de Roles para Testing/Agilidad */
+    .quick-roles {
+      margin-top: 26px;
+      padding-top: 20px;
+      border-top: 1px dashed var(--border-color);
+      text-align: center;
+    }
+
+    .quick-roles-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .role-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .role-chip {
+      background: #f7ede3;
+      border: 1px solid #ebd8c8;
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #6a4c38;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .role-chip:hover {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .form-footer {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ========================================================
+       RESPONSIVIDAD Y MEDIA QUERIES (MÓVILES Y TABLETS)
+       ======================================================== */
+    @media (max-width: 1024px) {
+      .hero-panel {
+        padding: 40px;
+      }
+      .hero-title {
+        font-size: 42px;
+      }
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+      .form-card {
+        padding: 32px 28px;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .login-wrapper {
+        grid-template-columns: 1fr;
+      }
+      
+      .hero-panel {
+        display: none; /* Ocultamos el panel lateral en móviles */
+      }
+
+      .form-panel {
+        min-height: 100vh;
+        padding: 24px 18px;
+        justify-content: center;
+      }
+
+      .mobile-brand {
+        display: flex; /* Mostramos cabecera integrada con el logo original */
+      }
+
+      .form-card {
+        max-width: 420px;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        padding: 30px 22px;
+      }
+
+      .form-title {
+        font-size: 24px;
+      }
+    }
+
+    @media (max-height: 700px) and (min-width: 861px) {
+      .hero-panel {
+        padding: 30px 40px;
+      }
+      .hero-logo-container {
+        width: 100px;
+        height: 100px;
+        margin-bottom: 16px;
+      }
+      .hero-title {
+        font-size: 38px;
+        margin-bottom: 8px;
+      }
+      .hero-desc {
+        font-size: 15px;
+        margin-bottom: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-wrapper">
+
+    <!-- ==========================================
+         PANEL IZQUIERDO: HERO DE MARCA Y SISTEMA
+         ========================================== -->
+    <section class="hero-panel">
+      
+      <!-- Encabezado con estado -->
+      <div class="hero-header">
+        <div class="brand-pill">
+          <span class="brand-pill-dot"></span>
+          <span>Sistema POS · Turno Activo</span>
+        </div>
+      </div>
+
+      <!-- Cuerpo con Logo y Presentación -->
+      <div class="hero-body">
+        
+        <!-- Logo Oficial Animado -->
+        <div class="hero-logo-container" title="El Chilpayate - Logotipo Oficial">
+          <img th:src="@{/img/logo.png}" alt="El Chilpayate Logo" class="hero-logo-img">
+        </div>
+
+        <h1 class="hero-title">El Chilpayate</h1>
+        <p class="hero-desc">
+          Restaurante & Alitas. Plataforma integral para Pedidos de salón, KDS en cocina, delivery y Cierre de caja en tiempo real.
+        </p>
+
+        <!-- Grilla de Módulos Destacados -->
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">🛎️</div>
+            <div class="feature-text">
+              <h4>Salón & Pedidos</h4>
+              <p>Mapeo visual de mesas y división rápida de precuentas.</p>
+            </div>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🍳</div>
+            <div class="feature-text">
+              <h4>KDS en Cocina</h4>
+              <p>Sincronización instantánea de tickets por estación.</p>
+            </div>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🛵</div>
+            <div class="feature-text">
+              <h4>Delivery Ágil</h4>
+              <p>Gestión de motorizados y trazabilidad por pedidos.</p>
+            </div>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🧮</div>
+            <div class="feature-text">
+              <h4>Caja Blindada</h4>
+              <p>Arqueo ciego, pagos mixtos y control de gastos.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Pie del Hero -->
+      <div class="hero-footer">
+        <span>© 2026 El Chilpayate POS v2.4</span>
+        <span>Autenticación de seguridad RBAC</span>
+      </div>
+
+    </section>
+
+    <!-- ==========================================
+         PANEL DERECHO: FORMULARIO INTERACTIVO (UI/UX)
+         ========================================== -->
+    <section class="form-panel">
+      
+      <div class="form-card">
+        
+        <!-- Cabecera Mobile con Logo Oficial -->
+        <div class="mobile-brand">
+          <div class="mobile-logo-wrap">
+            <img th:src="@{/img/logo.png}" alt="Logo El Chilpayate" class="mobile-logo-img">
+          </div>
+          <div>
+            <div class="mobile-brand-title">El Chilpayate</div>
+            <div class="mobile-brand-sub">Sistema de Gestión POS</div>
+          </div>
+        </div>
+
+        <!-- Título y bienvenida -->
+        <div class="form-header">
+          <span class="form-header-badge">Acceso al Sistema</span>
+          <h2 class="form-title">Iniciar Sesión</h2>
+          <p class="form-subtitle">Ingresa tus credenciales autorizadas para comenzar tu turno de trabajo.</p>
+        </div>
+
+        <!-- Alerta de Error de Autenticación -->
+        <div class="alert-box" th:if="${mensaje}">
+          <svg class="alert-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span th:text="${mensaje}">Usuario o contraseña incorrectos</span>
+        </div>
+
+        <!-- Alerta de Usuario Inactivo -->
+        <div class="alert-box alert-warning" th:if="${param.inactivo}">
+          <svg class="alert-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <span>Tu usuario se encuentra inactivo. Comunícate con Administración.</span>
+        </div>
+
+        <!-- Formulario POST hacia /login -->
+        <form method="post" th:action="@{/login}" id="loginForm" autocomplete="on">
+          
+          <!-- Campo Usuario -->
+          <div class="input-group">
+            <label class="input-label" for="username">Usuario</label>
+            <div class="input-box">
+              <svg class="field-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <input class="input-field" 
+                     id="username" 
+                     name="username" 
+                     type="text" 
+                     required 
+                     autofocus
+                     autocomplete="username" 
+                     placeholder="admin o tu usuario">
+            </div>
+          </div>
+
+          <!-- Campo Contraseña con Toggle de Visibilidad -->
+          <div class="input-group">
+            <label class="input-label" for="clave">Contraseña</label>
+            <div class="input-box">
+              <svg class="field-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <input class="input-field" 
+                     id="clave" 
+                     name="clave" 
+                     type="password" 
+                     required 
+                     autocomplete="current-password" 
+                     placeholder="••••••••">
+              
+              <!-- Botón Toggle Password -->
+              <button type="button" 
+                      class="toggle-password" 
+                      id="togglePasswordBtn" 
+                      title="Mostrar / Ocultar contraseña"
+                      tabindex="-1">
+                <svg id="eyeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+            <div class="caps-indicator" id="capsIndicator">
+              ⚠️ Bloqueo de mayúsculas (Caps Lock) activado
+            </div>
+          </div>
+
+          <!-- Fila de Recordar y Estado -->
+          <div class="form-extras">
+            <label class="remember-label">
+              <input type="checkbox" id="rememberMe" class="remember-checkbox">
+              <span>Recordar usuario</span>
+            </label>
+            <div class="system-status-chip">
+              <span>🔒 Cifrado SSL</span>
+            </div>
+          </div>
+
+          <!-- Botón de Envío -->
+          <button type="submit" class="btn-submit" id="submitBtn">
+            <span id="btnText">Ingresar al Sistema</span>
+            <svg id="btnArrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+
+        </form>
+
+        <!-- Accesos Rápidos para pruebas / agilidad de roles -->
+        <div class="quick-roles">
+          <div class="quick-roles-title">Roles del Sistema</div>
+          <div class="role-chips">
+            <button type="button" class="role-chip" onclick="fillUser('admin')">👑 Admin</button>
+            <button type="button" class="role-chip" onclick="fillUser('caja')">💵 Caja</button>
+            <button type="button" class="role-chip" onclick="fillUser('mozo')">🛎️ Mozo</button>
+            <button type="button" class="role-chip" onclick="fillUser('cocina')">🍳 Cocina</button>
+          </div>
+        </div>
+
+        <div class="form-footer">
+          El Chilpayate · Servidor Seguro Local & Cloud
+        </div>
+
+      </div>
+
+    </section>
+
+  </div>
+
+  <!-- Lógica Interactiva UI/UX -->
+  <script>
+    const usernameInput = document.getElementById('username');
+    const claveInput = document.getElementById('clave');
+    const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+    const eyeIcon = document.getElementById('eyeIcon');
+    const capsIndicator = document.getElementById('capsIndicator');
+    const rememberMeCheckbox = document.getElementById('rememberMe');
+    const loginForm = document.getElementById('loginForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const btnArrow = document.getElementById('btnArrow');
+
+    // 1. Recordar usuario con localStorage
+    try {
+      const savedUser = localStorage.getItem('chilpayate_saved_user');
+      if (savedUser) {
+        usernameInput.value = savedUser;
+        rememberMeCheckbox.checked = true;
+        claveInput.focus();
+      }
+    } catch (e) {
+      console.warn("Storage no disponible:", e);
+    }
+
+    // Guardar usuario al enviar si el checkbox está activo
+    loginForm.addEventListener('submit', function() {
+      if (rememberMeCheckbox.checked && usernameInput.value.trim() !== '') {
+        try {
+          localStorage.setItem('chilpayate_saved_user', usernameInput.value.trim());
+        } catch (e) {}
+      } else {
+        try {
+          localStorage.removeItem('chilpayate_saved_user');
+        } catch (e) {}
+      }
+
+      // Feedback visual de carga en el botón
+      submitBtn.disabled = true;
+      btnText.textContent = "Verificando acceso...";
+      btnArrow.style.display = "none";
+    });
+
+    // 2. Toggle de visibilidad de contraseña
+    togglePasswordBtn.addEventListener('click', function() {
+      const isPassword = claveInput.getAttribute('type') === 'password';
+      claveInput.setAttribute('type', isPassword ? 'text' : 'password');
+      
+      if (isPassword) {
+        // Icono ojo tachado
+        eyeIcon.innerHTML = `
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+          <line x1="1" y1="1" x2="23" y2="23"></line>
+        `;
+        togglePasswordBtn.setAttribute('title', 'Ocultar contraseña');
+      } else {
+        // Icono ojo normal
+        eyeIcon.innerHTML = `
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        `;
+        togglePasswordBtn.setAttribute('title', 'Mostrar contraseña');
+      }
+      claveInput.focus();
+    });
+
+    // 3. Detección de Bloq Mayús (Caps Lock)
+    function checkCapsLock(event) {
+      if (event.getModifierState && event.getModifierState('CapsLock')) {
+        capsIndicator.style.display = 'block';
+      } else {
+        capsIndicator.style.display = 'none';
+      }
+    }
+    claveInput.addEventListener('keyup', checkCapsLock);
+    claveInput.addEventListener('keydown', checkCapsLock);
+
+    // 4. Helper para rellenar usuario rápido
+    function fillUser(roleUser) {
+      usernameInput.value = roleUser;
+      claveInput.focus();
+    }
+  </script>
+
+</body>
+</html>

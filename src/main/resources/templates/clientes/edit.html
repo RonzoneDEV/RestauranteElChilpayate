@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Editar Cliente · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header">
+        <div>
+          <div class="eyebrow">Directorio</div>
+          <h2>Editar Cliente #<span th:text="${cliente.idCliente}"></span></h2>
+          <p class="muted">Actualiza los datos del cliente frecuente.</p>
+        </div>
+        <div>
+          <a class="btn btn-secondary" th:href="@{/clientes}">← Volver al listado</a>
+        </div>
+      </div>
+
+      <div class="card" style="max-width: 600px;">
+        <form th:action="@{/clientes/edit/{id}(id=${cliente.idCliente})}" th:object="${cliente}" method="post">
+          <div class="form-grid">
+            <div class="full">
+              <label class="form-label">Nombre Completo *</label>
+              <input class="form-control" th:field="*{nombre}" required>
+            </div>
+
+            <div>
+              <label class="form-label">Teléfono</label>
+              <input class="form-control" th:field="*{telefono}">
+            </div>
+
+            <div class="full">
+              <label class="form-label">Dirección habitual</label>
+              <input class="form-control" th:field="*{direccion}">
+            </div>
+
+            <div class="full">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 6px;">
+                <input type="checkbox" th:field="*{estado}">
+                <b>Cliente Activo</b>
+              </label>
+            </div>
+          </div>
+
+          <div style="margin-top: 24px; display: flex; gap: 10px;">
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            <a class="btn btn-soft" th:href="@{/clientes}">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css(v='3.2')}">
+</head>
+<body>
+<div class="app-shell">
+  <!-- Menú lateral separado -->
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <!-- Barra superior -->
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div class="eyebrow">Resumen de Operación del Día</div>
+      <h1 class="page-title">Panel de control</h1>
+      <p class="page-sub">Indicadores clave en tiempo real: ventas, pedidos, disponibilidad de mesas y gastos.</p>
+
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <!-- Métricas principales -->
+      <div class="grid grid-4">
+        <div class="card metric">
+          <div>
+            <div class="label">Ventas cobradas hoy</div>
+            <div class="value positive" th:text="'S/ ' + ${#numbers.formatDecimal(ventaHoy != null ? ventaHoy : (resumen != null and resumen.totalVentasHoy != null ? resumen.totalVentasHoy : 0), 1, 2)}">S/ 0.00</div>
+          </div>
+          <div class="bubble">💰</div>
+        </div>
+
+        <div class="card metric">
+          <div>
+            <div class="label">Pedidos activos</div>
+            <div class="value" th:text="${pedidosActivos != null ? #lists.size(pedidosActivos) : 0}">0</div>
+          </div>
+          <div class="bubble">🧾</div>
+        </div>
+
+        <div class="card metric">
+          <div>
+            <div class="label">Mesas ocupadas</div>
+            <div class="value" th:text="${mesas != null ? #lists.size(mesas.?[estado != null and estado.name() == 'OCUPADA']) + ' / ' + #lists.size(mesas) : '0 / 0'}">0 / 8</div>
+          </div>
+          <div class="bubble">🍽</div>
+        </div>
+
+        <div class="card metric">
+          <div>
+            <div class="label">Gastos registrados hoy</div>
+            <div class="value negative" th:text="${gastosHoy != null ? #lists.size(gastosHoy) : (resumen != null and resumen.cantidadGastosHoy != null ? resumen.cantidadGastosHoy : 0)}">0</div>
+          </div>
+          <div class="bubble">↘</div>
+        </div>
+      </div>
+
+      <!-- Mesas y Pedidos -->
+      <div class="grid grid-2" style="margin-top: 24px;">
+        <!-- Mesas -->
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <h3 style="margin: 0;">Disponibilidad de mesas</h3>
+              <small class="muted">Salón principal</small>
+            </div>
+            <a class="btn btn-soft btn-sm" th:href="@{/mesas}">Ver todas</a>
+          </div>
+
+          <div class="mesa-grid">
+            <div th:each="m : ${mesas}" th:class="${'mesa ' + (m.estado != null and m.estado.name() == 'OCUPADA' ? 'ocupada' : '')}">
+              <div class="num" th:text="'Mesa ' + ${m.numero}"></div>
+              <span th:class="${'badge ' + (m.estado != null and m.estado.name() == 'LIBRE' ? 'badge-ok' : (m.estado != null and m.estado.name() == 'OCUPADA' ? 'badge-bad' : 'badge-warn'))}"
+                    th:text="${m.estado}"></span>
+            </div>
+            <div th:if="${#lists.isEmpty(mesas)}" class="muted" style="grid-column: 1 / -1; padding: 20px; text-align: center;">
+              No hay mesas registradas.
+            </div>
+          </div>
+        </section>
+
+        <!-- Comandas activas -->
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <h3 style="margin: 0;">Pedidos en preparación</h3>
+              <small class="muted">Prioridad de cocina y despacho</small>
+            </div>
+            <a class="btn btn-primary btn-sm" th:href="@{/salon}">▦ Ir al Salón</a>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Tipo</th>
+                  <th>Destino</th>
+                  <th>Estado</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:each="p : ${pedidosActivos}">
+                  <td><b th:text="${p.codigo != null ? p.codigo : ('#' + p.idPedido)}"></b></td>
+                  <td>
+                    <span th:class="${p.tipo != null and p.tipo.name() == 'SALON' ? 'badge badge-ok' : 'badge badge-info'}" th:text="${p.tipo}"></span>
+                  </td>
+                  <td>
+                    <b th:if="${p.mesa != null}" th:text="'Mesa ' + ${p.mesa.numero}"></b>
+                    <span th:if="${p.cliente != null}" th:text="${p.cliente.nombre}"></span>
+                    <span th:if="${p.mesa == null and p.cliente == null}">Delivery</span>
+                  </td>
+                  <td>
+                    <span th:if="${p.pedidoDelivery != null}"
+                          th:class="${'badge ' + (p.pedidoDelivery.estado.name() == 'ENTREGADO' ? 'badge-ok' : (p.pedidoDelivery.estado.name() == 'LISTO' ? 'badge-ok' : 'badge-info'))}"
+                          th:text="${p.pedidoDelivery.estado}"></span>
+                    <span th:unless="${p.pedidoDelivery != null}"
+                          th:class="${p.estado != null and (p.estado.name() == 'PAGADA' or p.estado.name() == 'ACTIVA') ? 'badge badge-ok' : 'badge badge-warn'}"
+                          th:text="${p.estado}"></span>
+                  </td>
+                  <td style="font-weight: 800;" th:text="'S/ ' + ${#numbers.formatDecimal(p.total != null ? p.total : 0, 1, 2)}"></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(pedidosActivos)}">
+                  <td colspan="5" class="muted" style="text-align: center; padding: 25px;">No hay pedidos activos pendientes.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

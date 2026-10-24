@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Terminal de Caja · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css(v='3.2')}">
+  <style>
+    .pos-card {
+      border-radius: 18px;
+      padding: 18px;
+      border: 2px solid var(--line);
+      background: #ffffff;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      min-height: 240px;
+    }
+    .pos-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 28px rgba(70,42,16,.12);
+    }
+    .pos-card.con-cuenta {
+      border-color: #f59e0b;
+      background: linear-gradient(180deg, #fffdf5 0%, #ffffff 60%);
+    }
+    .pos-card.con-precuenta {
+      border-color: #3b82f6;
+      background: linear-gradient(180deg, #eff6ff 0%, #ffffff 60%);
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+    }
+    .pos-card.libre {
+      border-color: #e2e8f0;
+      background: #fafaf9;
+      opacity: 0.85;
+    }
+
+    /* Modal Backdrop Común */
+    .modal-backdrop-custom {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      place-items: center;
+      padding: 16px;
+    }
+    .modal-backdrop-custom.open {
+      display: grid;
+    }
+
+    /* Modal de Gestión de Precuentas y División */
+    .modal-dialog-box {
+      background: #ffffff;
+      width: 720px;
+      max-width: 95vw;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      max-height: 90vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Ticket Térmico */
+    .ticket-termico {
+      background: #ffffff;
+      width: 380px;
+      max-width: 95vw;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+      font-family: 'Courier New', Courier, monospace;
+      color: #1e293b;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .ticket-divider {
+      border: none;
+      border-top: 1px dashed #94a3b8;
+      margin: 12px 0;
+    }
+
+    .precuenta-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      margin: 2px;
+    }
+    .precuenta-chip.pendiente {
+      background: #dbeafe;
+      color: #1d4ed8;
+      border: 1px solid #93c5fd;
+    }
+    .precuenta-chip.pagada {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+    }
+
+    .item-select-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .item-select-row:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+    .item-select-row.selected {
+      background: #eff6ff;
+      border-color: #3b82f6;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content" style="max-width: 1600px;">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px;">
+        <div>
+          <div class="eyebrow" style="color: #22c55e;">Terminal POS de Caja</div>
+          <h1 class="page-title">Mapeo de Mesas · Cobro y Precuentas Divididas</h1>
+          <p class="muted">Gestión de comandas, división de precuentas por productos seleccionados y cobros individuales o totales.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <a class="btn btn-primary" th:href="@{/caja}">💳 Lista de Cobros</a>
+          <a class="btn btn-soft" th:href="@{/caja/cierre}">🧮 Cierre Diario de Caja</a>
+        </div>
+      </div>
+
+      <!-- Alerta de Caja Cerrada -->
+      <div th:if="${cajaAbierta == null}" class="flash flash-error" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>⚠️ No hay una caja abierta en el turno actual. Recuerde abrir caja para registrar ventas en efectivo.</span>
+        <a class="btn btn-primary btn-sm" th:href="@{/caja/cierre}">Abrir Caja</a>
+      </div>
+
+      <!-- Mapeo de Mesas del Salón en Caja -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="section-head">
+          <div>
+            <h3 style="margin: 0;">Plano de Mesas en Salón</h3>
+            <small class="muted">Haz clic en una mesa para gestionar sus precuentas individuales o cobrar</small>
+          </div>
+          <div style="display: flex; gap: 12px; font-size: 13px;">
+            <span><span class="badge badge-info">● Libre</span></span>
+            <span><span class="badge badge-warn">● En Consumo</span></span>
+            <span><span class="badge" style="background:#dbeafe; color:#1d4ed8;">● Con Precuenta</span></span>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 18px; margin-top: 14px;">
+          <div th:each="m : ${mesas}"
+               th:with="tienePedido=${pedidosPorMesa.containsKey(m.idMesa)},
+                        pedidoAct=${tienePedido ? pedidosPorMesa.get(m.idMesa) : null},
+                        listaPrecs=${tienePedido and precuentasPorPedido.containsKey(pedidoAct.idPedido) ? precuentasPorPedido.get(pedidoAct.idPedido) : null},
+                        tienePrecs=${listaPrecs != null and not #lists.isEmpty(listaPrecs)},
+                        estaDespachado=${tienePedido and despachoCompletadoPorPedido != null and despachoCompletadoPorPedido.containsKey(pedidoAct.idPedido) and despachoCompletadoPorPedido.get(pedidoAct.idPedido)},
+                        motivoBloq=${tienePedido and motivoBloqueoPorPedido != null and motivoBloqueoPorPedido.containsKey(pedidoAct.idPedido) ? motivoBloqueoPorPedido.get(pedidoAct.idPedido) : ''},
+                        estaBloqueada=${m.estado != null and m.estado.name() == 'BLOQUEADA'}"
+               th:class="${'pos-card ' + (estaBloqueada or tienePrecs ? 'con-precuenta' : (tienePedido and pedidoAct != null ? 'con-cuenta' : 'libre'))}">
+            
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <b style="font-size: 22px;" th:text="'Mesa ' + ${m.numero}"></b>
+                
+                <span th:if="${estaBloqueada or tienePrecs}" class="badge" style="background: #3b82f6; color: #fff; font-weight: 800;">
+                  🔒 <span th:text="${#lists.size(listaPrecs)}"></span> PRECUENTA(S)
+                </span>
+                <span th:if="${tienePedido and pedidoAct != null and not tienePrecs and not estaDespachado}" class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #f59e0b; font-weight: 800;">
+                  ⏳ EN COCINA
+                </span>
+                <span th:if="${tienePedido and pedidoAct != null and not tienePrecs and estaDespachado}" class="badge badge-warn" style="font-weight: 800;">
+                  🍽 SERVIDO
+                </span>
+                <span th:if="${not tienePedido or pedidoAct == null}" class="badge badge-info">LIBRE</span>
+              </div>
+
+              <!-- Información de Consumo si la mesa tiene comanda -->
+              <div th:if="${tienePedido and pedidoAct != null}">
+                <div class="muted" style="font-size: 12px;">Comanda: <b th:text="${pedidoAct.codigo}"></b></div>
+                <div style="font-size: 28px; font-weight: 900; color: var(--brown); margin: 6px 0 2px;">
+                  <span th:text="'S/ ' + ${pedidoAct.total != null ? #numbers.formatDecimal(pedidoAct.total, 1, 2) : '0.00'}"></span>
+                </div>
+                <div th:if="${pedidoAct.usuario != null}" class="muted" style="font-size: 12px; margin-bottom: 8px;">
+                  Mozo: <b th:text="${pedidoAct.usuario.nombres != null ? pedidoAct.usuario.nombres : pedidoAct.usuario.username}"></b>
+                </div>
+
+                <!-- Alerta si aún no se ha despachado en cocina / barra -->
+                <div th:if="${not estaDespachado}"
+                     style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 7px 10px; margin-bottom: 10px; font-size: 11px; color: #92400e; display: flex; align-items: flex-start; gap: 6px;">
+                  <span>⏳</span>
+                  <span th:text="${motivoBloq != null and !motivoBloq.isBlank() ? motivoBloq : 'En preparación en cocina. Mozo debe confirmar Servido a Mesa.'}"></span>
+                </div>
+
+                <!-- Alerta si la mesa está bloqueada en Salón con precuenta -->
+                <div th:if="${estaBloqueada}"
+                     style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 7px 10px; margin-bottom: 10px; font-size: 11px; color: #1e40af; display: flex; align-items: center; gap: 6px;">
+                  <span>🔒</span>
+                  <span>Mesa bloqueada en Salón. En proceso de cobro.</span>
+                </div>
+
+                <!-- Resumen Compacto de Precuentas de la Mesa (Requisito 4: no deformar la tarjeta) -->
+                <div th:if="${tienePrecs}">
+                  <!-- 1 Sola Precuenta -->
+                  <div th:if="${#lists.size(listaPrecs) == 1}"
+                       style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 6px 10px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="color: #166534; font-weight: 700;">🧾 Precuenta Generada</span>
+                    <b style="color: #15803d;" th:text="'S/ ' + ${#numbers.formatDecimal(listaPrecs[0].total, 1, 2)}"></b>
+                  </div>
+
+                  <!-- 2 o más Precuentas Divididas (Split) -->
+                  <div th:if="${#lists.size(listaPrecs) > 1}"
+                       style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 6px 10px; font-size: 11px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <span style="color: #1e40af; font-weight: 700;">✂️ Dividida: [[${#lists.size(listaPrecs)}]] subcuentas</span>
+                    </div>
+                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                      <span th:each="p : ${listaPrecs}"
+                            th:style="${'font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; ' +
+                                      (p.estado != null and p.estado.name() == 'PAGADA' ? 'background: #dcfce7; color: #166534;' : 'background: #fed7aa; color: #9a3412;')}"
+                            th:text="|#${p.numeroPrecuenta}: S/ ${#numbers.formatDecimal(p.total, 1, 2)}|">
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div th:if="${not tienePedido or pedidoAct == null}" class="muted" style="font-size: 13px; margin: 30px 0;">
+                Mesa lista sin consumo.
+              </div>
+            </div>
+
+            <!-- Botones de Acción de la Mesa (Spring Boot MVC) -->
+            <div th:if="${tienePedido and pedidoAct != null}" style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px;">
+              
+              <!-- Caso A: Si NO tiene precuenta y NO está totalmente despachado por el mozo (Bloqueado) -->
+              <button th:if="${not tienePrecs and not estaDespachado}" type="button" class="btn btn-sm" disabled
+                      style="width: 100%; background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; cursor: not-allowed; font-weight: 800; font-size: 12px; padding: 8px 10px;"
+                      th:title="${motivoBloq != null and !motivoBloq.isBlank() ? motivoBloq : 'En preparación en cocina. Mozo debe confirmar Servido / Entregado a Mesa antes de emitir precuenta.'}">
+                ⏳ En Cocina · Esperando Despacho
+              </button>
+
+              <!-- Caso B: Si NO tiene precuenta y YA está totalmente despachado por el mozo (Habilitado para crear precuenta) -->
+              <a th:if="${not tienePrecs and estaDespachado}"
+                 th:href="@{'/caja/precuenta/pedido/' + ${pedidoAct.idPedido}}"
+                 class="btn btn-primary btn-sm"
+                 style="width: 100%; font-weight: 800; font-size: 12px; padding: 8px 10px; text-decoration: none; text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                🧾 Crear Precuenta
+              </a>
+
+              <!-- Caso C: Si YA tiene precuentas generadas -->
+              <a th:if="${tienePrecs}"
+                 th:href="@{'/caja/precuenta/pedido/' + ${pedidoAct.idPedido}}"
+                 class="btn btn-primary btn-sm"
+                 style="width: 100%; font-weight: 800; font-size: 12px; padding: 8px 10px; text-decoration: none; text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                📑 Gestionar Precuentas ([[${#lists.size(listaPrecs)}]])
+              </a>
+
+              <!-- 2. Botón Directo para Cobrar cuando ya está generada y despachada -->
+              <a th:if="${tienePrecs and estaDespachado}"
+                 class="btn btn-primary btn-sm"
+                 style="width: 100%; background: #22c55e; color: #052e16; font-weight: 800; text-align: center; font-size: 12px; padding: 8px; box-shadow: 0 4px 12px rgba(34,197,94,0.3); text-decoration: none;"
+                 th:href="@{${#lists.size(listaPrecs) == 1 ? '/caja/pago/precuenta/' + listaPrecs[0].idPrecuenta : '/caja/pago/' + pedidoAct.idPedido}}">
+                💳 Cobrar Precuenta
+              </a>
+
+            </div>
+
+            <div th:if="${not tienePedido or pedidoAct == null}">
+              <a class="btn btn-soft btn-sm" style="width: 100%;" th:href="@{'/pedidos/mesa/' + ${m.idMesa}}">
+                + Abrir Comanda
+              </a>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección de Delivery Pendiente de Cobro -->
+      <div class="card" th:if="${not #lists.isEmpty(pedidosDelivery)}">
+        <div class="section-head">
+          <h3 style="margin: 0;">🛵 Pedidos Delivery Pendientes de Cobro</h3>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Comanda</th>
+                <th>Cliente</th>
+                <th>Dirección</th>
+                <th>Total</th>
+                <th>Estado Despacho</th>
+                <th style="text-align: right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="d : ${pedidosDelivery}"
+                  th:with="listaPrecsDel=${precuentasPorPedido.containsKey(d.idPedido) ? precuentasPorPedido.get(d.idPedido) : null},
+                           tienePrecsDel=${listaPrecsDel != null and not #lists.isEmpty(listaPrecsDel)},
+                           estaDespachadoDel=${despachoCompletadoPorPedido != null and despachoCompletadoPorPedido.containsKey(d.idPedido) and despachoCompletadoPorPedido.get(d.idPedido)},
+                           motivoBloqDel=${motivoBloqueoPorPedido != null and motivoBloqueoPorPedido.containsKey(d.idPedido) ? motivoBloqueoPorPedido.get(d.idPedido) : ''}">
+                <td><b th:text="${d.codigo}"></b></td>
+                <td th:text="${d.cliente != null ? d.cliente.nombre : 'Cliente Delivery'}"></td>
+                <td th:text="${d.pedidoDelivery != null ? d.pedidoDelivery.direccion : '-'}"></td>
+                <td style="font-weight: 800; color: var(--brown);" th:text="'S/ ' + ${d.total != null ? #numbers.formatDecimal(d.total, 1, 2) : '0.00'}"></td>
+                <td>
+                  <span th:if="${estaDespachadoDel}" class="badge badge-ok">🍽 Entregado</span>
+                  <span th:unless="${estaDespachadoDel}" class="badge badge-warn" th:title="${motivoBloqDel}">⏳ En Cocina</span>
+                </td>
+                <td style="text-align: right; display: flex; justify-content: flex-end; gap: 6px;">
+                  <form th:if="${estaDespachadoDel and not tienePrecsDel}" th:action="@{'/caja/precuenta/generar/' + ${d.idPedido}}" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn-soft btn-sm" style="font-weight: 700;">🧾 Precuenta</button>
+                  </form>
+                  <button th:if="${not estaDespachadoDel}" type="button" class="btn btn-sm" disabled style="background: #f1f5f9; color: #94a3b8; border: 1px solid #cbd5e1; cursor: not-allowed;" th:title="${motivoBloqDel}">
+                    🧾 Precuenta
+                  </button>
+
+                  <a th:if="${estaDespachadoDel and tienePrecsDel}" class="btn btn-primary btn-sm" style="background: #22c55e; color: #052e16; font-weight: 800;"
+                     th:href="@{'/caja/pago/' + ${d.idPedido}}">💳 Cobrar</a>
+                  <button th:if="${not estaDespachadoDel or not tienePrecsDel}" type="button" class="btn btn-sm" disabled style="background: #f1f5f9; color: #94a3b8; border: 1px solid #cbd5e1; cursor: not-allowed;" th:title="${not estaDespachadoDel ? motivoBloqDel : 'Debe generar la precuenta primero'}">
+                    💳 Cobrar
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL 1: GESTIÓN DE PRECUENTAS EXISTENTES DE LA MESA           -->
+<!-- ============================================================== -->
+<div class="modal-backdrop-custom" id="modalGestionPrecuentas">
+  <div class="modal-dialog-box" style="width: 680px; max-width: 95vw;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 14px;">
+      <div>
+        <h3 style="margin: 0;">Precuentas de Mesa #<span id="gestMesaNum"></span></h3>
+        <small class="muted">Comanda: <b id="gestComandaCodigo"></b> · Total Consumo: <b id="gestTotalConsumo" style="color: var(--brown);"></b></small>
+      </div>
+      <button type="button" class="btn-trash" onclick="cerrarModalGestion()" style="font-size: 18px; padding: 6px 12px;">✕</button>
+    </div>
+
+    <!-- Contenedor dinámico de Precuentas de la mesa -->
+    <div id="gestListaPrecuentas" style="display: flex; flex-direction: column; gap: 12px; margin-top: 14px; max-height: 400px; overflow-y: auto;">
+      <!-- Se puebla dinámicamente con JS -->
+    </div>
+
+    <div style="display: flex; gap: 10px; margin-top: 16px; border-top: 1px solid #e2e8f0; padding-top: 14px;">
+      <button type="button" class="btn btn-primary btn-sm" style="flex: 1; font-weight: 700;" onclick="abrirModalDividirPrecuentaActual()">
+        ✂️ + Crear Nueva Precuenta por Productos
+      </button>
+      <button type="button" class="btn btn-soft btn-sm" onclick="cerrarModalGestion()">
+        Cerrar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL 2: DIVIDIR COMANDA POR PRODUCTOS (CHECKBOXES)            -->
+<!-- ============================================================== -->
+<!-- ============================================================== -->
+<!-- MODAL 2: DIVIDIR COMANDA POR PRODUCTOS (CHECKBOXES + BALANCE)  -->
+<!-- ============================================================== -->
+<div class="modal-backdrop-custom" id="modalDividirPrecuenta">
+  <div class="modal-dialog-box" style="width: 640px; max-width: 95vw;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
+      <div>
+        <h3 style="margin: 0; font-size: 18px;">✂️ Dividir Cuenta por Platos (Split)</h3>
+        <small class="muted">Mesa #<span id="divMesaNum"></span> · Comanda <span id="divComandaCodigo"></span></small>
+      </div>
+      <button type="button" class="btn-trash" onclick="cerrarModalDividir()" style="font-size: 18px; padding: 6px 12px;">✕</button>
+    </div>
+
+    <!-- Barra de Estado del Saldo de la Mesa (Requisito 7: no dejar saldo del pedido) -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 12px 0 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 14px;">
+      <div style="text-align: center;">
+        <small style="color: #64748b; font-size: 11px; display: block; font-weight: 600;">Total Comanda</small>
+        <b id="divTotalComanda" style="font-size: 15px; color: #0f172a;">S/ 0.00</b>
+      </div>
+      <div style="text-align: center; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+        <small style="color: #64748b; font-size: 11px; display: block; font-weight: 600;">Asignado</small>
+        <b id="divTotalAsignado" style="font-size: 15px; color: #15803d;">S/ 0.00</b>
+      </div>
+      <div style="text-align: center;">
+        <small style="color: #64748b; font-size: 11px; display: block; font-weight: 600;">Saldo por Asignar</small>
+        <b id="divSaldoPendiente" style="font-size: 15px; color: #dc2626;">S/ 0.00</b>
+      </div>
+    </div>
+
+    <!-- Subcuentas ya creadas de esta comanda con opción de eliminarlas (Requisitos 7 y 8) -->
+    <div id="divSeccionPrecuentasExistentes" style="display: none; background: #fffdf5; border: 1px solid #fde68a; border-radius: 12px; padding: 10px 14px; margin-bottom: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 11px; font-weight: 800; color: #78350f; text-transform: uppercase;">Subcuentas ya creadas:</span>
+        <button type="button" class="btn btn-soft btn-sm" style="font-size: 10px; padding: 2px 8px; color: #dc2626; border: 1px solid #fca5a5;" onclick="reiniciarPrecuentasModal()">
+          🗑️ Eliminar todas y reiniciar
+        </button>
+      </div>
+      <div id="divListaPrecuentasExistentes" style="display: flex; flex-direction: column; gap: 4px; max-height: 110px; overflow-y: auto;">
+        <!-- Se puebla dinámicamente con JS -->
+      </div>
+    </div>
+
+    <form id="formDividirPrecuenta" method="post" action="" onsubmit="return validarFormDividir();">
+      <!-- Barra de selección rápida de productos -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase;">Seleccionar Platos para la Nueva Cuenta:</span>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" class="btn btn-soft btn-sm" style="font-size: 11px; padding: 3px 8px;" onclick="seleccionarTodosDivision(true)">☑️ Todos</button>
+          <button type="button" class="btn btn-soft btn-sm" style="font-size: 11px; padding: 3px 8px;" onclick="seleccionarTodosDivision(false)">⬜ Desmarcar</button>
+        </div>
+      </div>
+
+      <div id="divListaItemsDisponibles" style="max-height: 220px; overflow-y: auto; padding-right: 4px;">
+        <div style="text-align: center; padding: 20px;" class="muted">Cargando platos de la comanda...</div>
+      </div>
+
+      <!-- Resumen Calculado de la Precuenta a Crear y Saldo Restante -->
+      <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 12px 16px; margin-top: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span style="font-size: 11px; font-weight: 700; color: #1e40af; text-transform: uppercase;">Total de esta Precuenta:</span>
+            <small style="display: block; color: #3b82f6;">(Incluye IGV 18%)</small>
+          </div>
+          <b id="divTotalSeleccionado" style="font-size: 22px; color: #1d4ed8;">S/ 0.00</b>
+        </div>
+        <div id="divAlertaSaldoRestante" style="margin-top: 6px; font-size: 11px;">
+          <!-- Calculado dinámicamente -->
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 16px;">
+        <button type="submit" class="btn btn-primary" style="flex: 1.5; font-weight: 700;" id="btnConfirmarDivision">
+          ✓ Generar Precuenta
+        </button>
+        <button type="button" class="btn btn-soft" style="flex: 1;" onclick="cerrarModalDividir()">
+          Cerrar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL 3: TICKET TÉRMICO DE PRECUENTA                           -->
+<!-- ============================================================== -->
+<div class="modal-backdrop-custom" id="modalPrecuenta">
+  <div class="ticket-termico">
+    <div style="text-align: center;">
+      <b style="font-size: 18px; letter-spacing: 1px;" th:text="${configuracion != null and configuracion.nombre != null ? configuracion.nombre.toUpperCase() : 'EL CHILPAYATE'}">EL CHILPAYATE</b>
+      <div style="font-size: 12px; margin-top: 2px;">POLLERÍA & ALITAS A LA LEÑA</div>
+      <div style="font-size: 11px; color: #64748b;">
+        <b>RUC: <span th:text="${configuracion != null and configuracion.ruc != null ? configuracion.ruc : '10876343874'}">10876343874</span></b>
+      </div>
+      <div style="font-size: 11px; color: #64748b;" th:text="${configuracion != null ? configuracion.direccionCompleta : 'Carlos Wiesse 625, Santo Dominguito · Trujillo - La Libertad'}">
+        Carlos Wiesse 625, Santo Dominguito · Trujillo - La Libertad
+      </div>
+      <div style="font-weight: 800; font-size: 14px; margin-top: 10px; background: #f1f5f9; padding: 4px;" id="precTituloHeader">
+        *** PRECUENTA TEMPORAL ***
+      </div>
+      <small style="font-size: 10px; color: #64748b; display: block; margin-top: 2px;">(No válida como comprobante fiscal)</small>
+    </div>
+
+    <hr class="ticket-divider">
+
+    <div style="font-size: 12px; line-height: 1.5;">
+      <div><b>MESA:</b> <span id="precMesa">3 (Salón Principal)</span></div>
+      <div><b>COMANDA:</b> <span id="precCodigo">PED-12345</span></div>
+      <div><b>SUBCUENTA:</b> <span id="precSubcuentaNombre">Cuenta 1</span></div>
+      <div><b>MOZO:</b> <span id="precMozo">Juan Pérez</span></div>
+      <div><b>FECHA:</b> <span id="precFecha">16/10/2026 12:30</span></div>
+      <div><b>CLIENTE:</b> <span id="precCliente">Cliente Casual</span></div>
+    </div>
+
+    <hr class="ticket-divider">
+
+    <!-- Tabla de Ítems consumidos -->
+    <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+      <thead>
+        <tr style="border-bottom: 1px dashed #cbd5e1;">
+          <th style="text-align: left; padding-bottom: 4px;">Cant</th>
+          <th style="text-align: left; padding-bottom: 4px;">Descripción</th>
+          <th style="text-align: right; padding-bottom: 4px;">Total</th>
+        </tr>
+      </thead>
+      <tbody id="precItemsBody">
+        <!-- Renderizado dinámico desde el JSON -->
+      </tbody>
+    </table>
+
+    <hr class="ticket-divider">
+
+    <div style="font-size: 13px; line-height: 1.6;">
+      <div style="display: flex; justify-content: space-between;">
+        <span>OP. GRAVADA (Subtotal):</span>
+        <b id="precSubtotal">S/ 0.00</b>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span>I.G.V. (18%):</span>
+        <b id="precIgv">S/ 0.00</b>
+      </div>
+      <div id="precFilaDelivery" style="display: flex; justify-content: space-between; display: none;">
+        <span>COSTO DELIVERY:</span>
+        <b id="precDelivery">S/ 0.00</b>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: 900; margin-top: 6px; border-top: 1px solid #1e293b; padding-top: 4px;">
+        <span>TOTAL A PAGAR:</span>
+        <span id="precTotal">S/ 0.00</span>
+      </div>
+    </div>
+
+    <div style="margin-top: 16px; text-align: center; font-size: 11px; color: #64748b;">
+      ¡Gracias por su preferencia!
+    </div>
+
+    <!-- Botones de Acción en Modal -->
+    <div style="display: flex; gap: 8px; margin-top: 20px; font-family: Inter, sans-serif;">
+      <button type="button" class="btn btn-soft" style="flex: 1;" onclick="imprimirPrecuenta()">
+        🖨️ Imprimir
+      </button>
+      <a id="btnProcederPagar" class="btn btn-primary" style="flex: 1.4; background: #22c55e; color: #052e16;" href="#">
+        💳 Proceder a Pagar
+      </a>
+    </div>
+
+    <button type="button" class="btn btn-soft btn-sm" style="width: 100%; margin-top: 8px; font-family: Inter, sans-serif;" onclick="cerrarModalPrecuenta()">
+      Cerrar
+    </button>
+  </div>
+</div>
+
+<script th:inline="javascript">
+  const precuentasCache = /*[[${precuentasJson}]]*/ {};
+  const autoVerPrecuentaId = /*[[${verPrecuentaId}]]*/ null;
+  let pedidoActualGestion = null;
+  let mesaActualGestion = null;
+  let codigoActualGestion = null;
+
+  function abrirModalGestionPrecuentas(idPedido, numMesa, codigoComanda, totalConsumo) {
+    pedidoActualGestion = idPedido;
+    mesaActualGestion = numMesa;
+    codigoActualGestion = codigoComanda;
+
+    document.getElementById('gestMesaNum').textContent = numMesa;
+    document.getElementById('gestComandaCodigo').textContent = codigoComanda;
+    document.getElementById('gestTotalConsumo').textContent = 'S/ ' + (parseFloat(totalConsumo) || 0).toFixed(2);
+
+    const container = document.getElementById('gestListaPrecuentas');
+    container.innerHTML = '<div style="text-align:center;padding:24px;" class="muted">Cargando precuentas y productos de la mesa...</div>';
+
+    // Obtener todas las precuentas y productos disponibles en paralelo
+    Promise.all([
+      fetch('/caja/precuenta/' + idPedido + '/todas/json').then(r => r.json()),
+      fetch('/caja/pedido/' + idPedido + '/disponibles').then(r => r.json())
+    ])
+    .then(([precuentas, disponibles]) => {
+      renderizarGestionPrecuentas(idPedido, precuentas, disponibles);
+    })
+    .catch(err => {
+      container.innerHTML = '<div class="flash flash-error">Error al cargar datos de precuentas: ' + err + '</div>';
+    });
+
+    document.getElementById('modalGestionPrecuentas').classList.add('open');
+  }
+
+  function renderizarGestionPrecuentas(idPedido, precuentas, disponibles) {
+    const container = document.getElementById('gestListaPrecuentas');
+    container.innerHTML = '';
+
+    // Si hay productos sin asignar en la mesa, mostrar aviso destacado
+    if (disponibles && disponibles.length > 0) {
+      let sumaDisp = 0;
+      disponibles.forEach(d => { sumaDisp += parseFloat(d.precio) || 0; });
+      const dispBanner = document.createElement('div');
+      dispBanner.style.background = '#fffbeb';
+      dispBanner.style.border = '1px solid #fde68a';
+      dispBanner.style.borderRadius = '12px';
+      dispBanner.style.padding = '12px 16px';
+      dispBanner.style.display = 'flex';
+      dispBanner.style.justifyContent = 'space-between';
+      dispBanner.style.alignItems = 'center';
+      dispBanner.innerHTML = `
+        <div>
+          <b style="color: #92400e; font-size: 13px;">⚠️ Quedan ${disponibles.length} plato(s) sin precuenta (S/ ${sumaDisp.toFixed(2)})</b>
+          <div style="color: #b45309; font-size: 11px; margin-top: 2px;">Para liberar la mesa al final, todos los platos deben tener su precuenta y ser pagados.</div>
+        </div>
+        <button type="button" class="btn btn-sm btn-primary" onclick="abrirModalDividirPrecuentaActual()" style="font-weight: 700; font-size: 11px;">
+          ✂️ Asignar Platos
+        </button>
+      `;
+      container.appendChild(dispBanner);
+    }
+
+    if (precuentas && Array.isArray(precuentas) && precuentas.length > 0) {
+      precuentas.forEach(p => {
+        const card = document.createElement('div');
+        card.style.background = '#f8fafc';
+        card.style.border = '1px solid #e2e8f0';
+        card.style.borderRadius = '14px';
+        card.style.padding = '14px 18px';
+        card.style.display = 'flex';
+        card.style.justifyContent = 'space-between';
+        card.style.alignItems = 'center';
+
+        const esPagada = p.estado === 'PAGADA';
+
+        let clienteInfo = p.nombreCliente || ('Cuenta #' + p.numeroPrecuenta);
+        if (p.dniRuc) {
+          clienteInfo += ` <span style="color:#64748b;font-size:12px;">(${p.tipoComprobante || 'DOC'}: <b>${p.dniRuc}</b>)</span>`;
+        }
+
+        card.innerHTML = `
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <b style="font-size:16px;">Precuenta #${p.numeroPrecuenta || 1}</b>
+              <span class="precuenta-chip ${esPagada ? 'pagada' : 'pendiente'}">
+                ${esPagada ? '✓ PAGADA' : '● PENDIENTE DE COBRO'}
+              </span>
+            </div>
+            <div style="font-size:13px;color:#1e293b;margin-top:3px;">
+              Cliente: <b>${clienteInfo}</b>
+            </div>
+            <div style="font-size:13px;color:#64748b;margin-top:2px;">
+              Total: <b style="color:var(--brown);font-size:16px;">S/ ${(p.total || 0).toFixed(2)}</b>
+              <span style="margin-left:8px;">· ${p.items ? p.items.length : 0} producto(s) incluidos</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button type="button" class="btn btn-soft btn-sm" onclick="abrirModalPrecuentaPorId(${p.idPrecuenta})">
+              👁 Ver Ticket
+            </button>
+            ${!esPagada ? `
+              <a class="btn btn-primary btn-sm" style="background:#22c55e;color:#052e16;font-weight:800;" href="/caja/pago/precuenta/${p.idPrecuenta}">
+                💳 Cobrar
+              </a>
+              <form action="/caja/precuenta/anular/${p.idPrecuenta}" method="post" onsubmit="return confirm('¿Anular esta precuenta y liberar sus productos para reasignación?');" style="display:inline;">
+                <button type="submit" class="btn-trash" style="padding:6px 10px;" title="Anular precuenta">✕</button>
+              </form>
+            ` : ''}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    } else {
+      const emptyDiv = document.createElement('div');
+      emptyDiv.style.textAlign = 'center';
+      emptyDiv.style.padding = '24px';
+      emptyDiv.style.background = '#f8fafc';
+      emptyDiv.style.borderRadius = '12px';
+      emptyDiv.className = 'muted';
+      emptyDiv.innerHTML = `
+        No se han generado precuentas para esta mesa todavía.<br>
+        Haz clic en el botón de abajo para seleccionar los productos y crear la primera precuenta.
+      `;
+      container.appendChild(emptyDiv);
+    }
+  }
+
+  function cerrarModalGestion() {
+    document.getElementById('modalGestionPrecuentas').classList.remove('open');
+  }
+
+  function abrirModalDividirPrecuentaActual() {
+    cerrarModalGestion();
+    abrirModalDividirPrecuenta(pedidoActualGestion, mesaActualGestion, codigoActualGestion);
+  }
+
+  let currentSplitData = null;
+
+  function abrirModalDividirPrecuenta(idPedido, numMesa, codigoComanda) {
+    pedidoActualGestion = idPedido;
+    mesaActualGestion = numMesa;
+    codigoActualGestion = codigoComanda;
+
+    document.getElementById('divMesaNum').textContent = numMesa;
+    document.getElementById('divComandaCodigo').textContent = codigoComanda;
+    document.getElementById('formDividirPrecuenta').action = '/caja/precuenta/dividir/' + idPedido;
+
+    const listContainer = document.getElementById('divListaItemsDisponibles');
+    listContainer.innerHTML = '<div style="text-align:center;padding:20px;" class="muted">Cargando platos y estado de la comanda...</div>';
+
+    fetch('/caja/pedido/' + idPedido + '/disponibles', {
+      headers: { 'Accept': 'application/json' }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Error ' + res.status + ' al consultar comanda');
+        return res.json();
+      })
+      .then(data => {
+        currentSplitData = data;
+        renderizarModalDivision(data);
+      })
+      .catch(err => {
+        listContainer.innerHTML = '<div class="flash flash-error">Error al cargar comanda: ' + err + '</div>';
+      });
+
+    document.getElementById('modalDividirPrecuenta').classList.add('open');
+  }
+
+  function renderizarModalDivision(data) {
+    const totalComanda = data.totalComanda || 0;
+    const totalAsignado = data.totalAsignado || 0;
+    const saldoPendiente = data.saldoPendiente || 0;
+    const items = data.items || [];
+    const precuentas = data.precuentas || [];
+
+    document.getElementById('divTotalComanda').textContent = 'S/ ' + totalComanda.toFixed(2);
+    document.getElementById('divTotalAsignado').textContent = 'S/ ' + totalAsignado.toFixed(2);
+    document.getElementById('divSaldoPendiente').textContent = 'S/ ' + saldoPendiente.toFixed(2);
+
+    // 1. Renderizar subcuentas ya creadas con opción de eliminación (Requisitos 7 y 8)
+    const contPrecuentas = document.getElementById('divListaPrecuentasExistentes');
+    const seccPrecuentas = document.getElementById('divSeccionPrecuentasExistentes');
+    contPrecuentas.innerHTML = '';
+
+    if (precuentas.length > 0) {
+      seccPrecuentas.style.display = 'block';
+      precuentas.forEach(p => {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.justifyContent = 'space-between';
+        row.style.alignItems = 'center';
+        row.style.background = '#ffffff';
+        row.style.border = '1px solid #e2e8f0';
+        row.style.borderRadius = '8px';
+        row.style.padding = '6px 10px';
+        row.style.fontSize = '12px';
+
+        const esPagada = p.estado === 'PAGADA';
+        row.innerHTML = `
+          <div>
+            <b style="color: #0f172a;">Precuenta #${p.numeroPrecuenta}</b>
+            <span style="color: #64748b; font-size: 11px;">(${p.cantidadItems} platos)</span>
+            <span style="margin-left: 6px; font-weight: 700; color: ${esPagada ? '#16a34a' : '#ea580c'};">
+              ${esPagada ? '✓ PAGADA' : '⏳ PENDIENTE'}
+            </span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <b style="color: var(--brown);">S/ ${(parseFloat(p.total) || 0).toFixed(2)}</b>
+            ${!esPagada ? `
+              <button type="button" class="btn btn-soft btn-sm" style="color: #dc2626; padding: 2px 7px; font-size: 11px; border: 1px solid #fecaca;"
+                      onclick="eliminarPrecuentaDesdeModal(${p.idPrecuenta})" title="Eliminar esta subcuenta y liberar sus platos">
+                🗑️ Eliminar
+              </button>
+            ` : ''}
+          </div>
+        `;
+        contPrecuentas.appendChild(row);
+      });
+    } else {
+      seccPrecuentas.style.display = 'none';
+    }
+
+    // 2. Renderizar platos disponibles
+    const listContainer = document.getElementById('divListaItemsDisponibles');
+    listContainer.innerHTML = '';
+
+    if (items.length === 0) {
+      if (precuentas.length > 0) {
+        listContainer.innerHTML = `
+          <div style="text-align:center;padding:22px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;color:#166534;">
+            <div style="font-size:24px;margin-bottom:4px;">🎉</div>
+            <b style="font-size:14px;display:block;margin-bottom:4px;">¡Todos los productos de la comanda ya están divididos en subcuentas!</b>
+            <p style="font-size:12px;margin:0 0 12px;color:#15803d;">
+              No queda ningún saldo restante por asignar. Puedes proceder a cobrar las subcuentas generadas.
+            </p>
+            <a href="/caja/pago/${pedidoActualGestion}" class="btn btn-primary btn-sm" style="font-weight:800;padding:6px 14px;text-decoration:none;">
+              💳 Proceder al Cobro
+            </a>
+          </div>
+        `;
+      } else {
+        listContainer.innerHTML = `
+          <div style="text-align:center;padding:20px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;color:#64748b;">
+            ✓ Todos los productos de esta comanda ya han sido pagados.
+          </div>
+        `;
+      }
+      document.getElementById('btnConfirmarDivision').disabled = true;
+      document.getElementById('divTotalSeleccionado').textContent = 'S/ 0.00';
+      document.getElementById('divAlertaSaldoRestante').innerHTML = '';
+      return;
+    }
+
+    document.getElementById('btnConfirmarDivision').disabled = false;
+    items.forEach(it => {
+      const row = document.createElement('label');
+      row.className = 'item-select-row selected';
+      row.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="checkbox" name="idDetalles" value="${it.idDetalle}" checked data-precio="${it.precio}" onchange="recalcularTotalDivision(this)" style="transform:scale(1.2);">
+          <div>
+            <b style="font-size:14px;color:#0f172a;">${it.producto}</b>
+            ${it.nota ? '<div style="font-size:11px;color:#0284c7;">' + it.nota + '</div>' : ''}
+          </div>
+        </div>
+        <b style="color:var(--brown);font-size:14px;">S/ ${(parseFloat(it.precio) || 0).toFixed(2)}</b>
+      `;
+      listContainer.appendChild(row);
+    });
+
+    recalcularTotalDivision();
+  }
+
+  function eliminarPrecuentaDesdeModal(idPrecuenta) {
+    if (!confirm('¿Eliminar esta subcuenta? Sus productos volverán a estar disponibles inmediatamente para poder redividirlos.')) return;
+
+    fetch('/caja/precuenta/eliminar/' + idPrecuenta + '/json', { method: 'POST' })
+      .then(r => r.json())
+      .then(res => {
+        if (res.success) {
+          abrirModalDividirPrecuenta(pedidoActualGestion, mesaActualGestion, codigoActualGestion);
+        } else {
+          alert('Error: ' + (res.error || 'No se pudo eliminar'));
+        }
+      })
+      .catch(err => alert('Error: ' + err));
+  }
+
+  function reiniciarPrecuentasModal() {
+    if (!confirm('¿Eliminar todas las subcuentas pendientes de esta mesa? Todos los platos quedarán libres y podrás volver a generar una Precuenta Única.')) return;
+
+    fetch('/caja/precuenta/reiniciar/' + pedidoActualGestion, { method: 'POST' })
+      .then(r => r.json())
+      .then(res => {
+        if (res.success) {
+          window.location.reload();
+        } else {
+          alert('Error: ' + (res.error || 'No se pudo reiniciar'));
+        }
+      })
+      .catch(err => alert('Error: ' + err));
+  }
+
+  function seleccionarTodosDivision(check) {
+    document.querySelectorAll('#divListaItemsDisponibles input[name="idDetalles"]').forEach(cb => {
+      cb.checked = check;
+      const row = cb.closest('.item-select-row');
+      if (check) row.classList.add('selected');
+      else row.classList.remove('selected');
+    });
+    recalcularTotalDivision();
+  }
+
+  function validarFormDividir() {
+    const checked = document.querySelectorAll('#divListaItemsDisponibles input[name="idDetalles"]:checked');
+    if (checked.length === 0) {
+      alert('Debe seleccionar al menos un producto para generar la precuenta.');
+      return false;
+    }
+    return true;
+  }
+
+  function recalcularTotalDivision(checkbox) {
+    if (checkbox) {
+      const row = checkbox.closest('.item-select-row');
+      if (checkbox.checked) {
+        row.classList.add('selected');
+      } else {
+        row.classList.remove('selected');
+      }
+    }
+
+    let suma = 0;
+    document.querySelectorAll('#divListaItemsDisponibles input[name="idDetalles"]:checked').forEach(cb => {
+      suma += parseFloat(cb.dataset.precio) || 0;
+    });
+
+    document.getElementById('divTotalSeleccionado').textContent = 'S/ ' + suma.toFixed(2);
+
+    const saldoPendiente = (currentSplitData && currentSplitData.saldoPendiente != null) ? currentSplitData.saldoPendiente : 0;
+    const saldoRestanteTrasCrear = Math.max(0, saldoPendiente - suma);
+    const alertaBox = document.getElementById('divAlertaSaldoRestante');
+
+    if (suma > 0) {
+      if (saldoRestanteTrasCrear <= 0.01) {
+        alertaBox.innerHTML = '<span style="color:#15803d;font-weight:700;">✓ ¡Con esta cuenta se completará el 100% de la comanda! Saldo restante: S/ 0.00</span>';
+      } else {
+        alertaBox.innerHTML = '<span style="color:#b45309;font-weight:600;">⚠️ Quedará un saldo restante de S/ ' + saldoRestanteTrasCrear.toFixed(2) + ' para la siguiente cuenta.</span>';
+      }
+    } else {
+      alertaBox.innerHTML = '<span style="color:#64748b;">Selecciona los platos que formarán esta precuenta.</span>';
+    }
+  }
+
+  function cerrarModalDividir() {
+    document.getElementById('modalDividirPrecuenta').classList.remove('open');
+    // Si se eliminaron subcuentas o se hicieron cambios, refrescar para que las tarjetas reflejen el estado
+    window.location.reload();
+  }
+
+  function abrirModalPrecuentaPorId(idPrecuenta) {
+    fetch('/caja/precuenta/info/' + idPrecuenta + '/json')
+      .then(res => res.json())
+      .then(data => {
+        renderizarTicketPrecuenta(data);
+      })
+      .catch(err => {
+        alert('Error al obtener ticket de precuenta: ' + err);
+      });
+  }
+
+  function abrirModalPrecuenta(idPedido) {
+    fetch('/caja/precuenta/' + idPedido + '/json')
+      .then(res => res.json())
+      .then(data => {
+        renderizarTicketPrecuenta(data);
+      })
+      .catch(err => {
+        alert('Error al obtener precuenta: ' + err);
+      });
+  }
+
+  function renderizarTicketPrecuenta(data) {
+    if (!data || (!data.idPrecuenta && !data.idPedido)) {
+      alert('No hay información de precuenta disponible.');
+      return;
+    }
+
+    document.getElementById('precMesa').textContent = data.numeroMesa > 0 ? ('Mesa #' + data.numeroMesa + ' (' + (data.salon || 'Salón') + ')') : 'DELIVERY';
+    document.getElementById('precCodigo').textContent = data.codigo || ('#' + data.idPedido);
+    document.getElementById('precSubcuentaNombre').textContent = data.nombreCliente || ('Cuenta #' + (data.numeroPrecuenta || 1));
+    document.getElementById('precMozo').textContent = data.mozo || 'Asignado';
+    document.getElementById('precFecha').textContent = data.fechaEmision || new Date().toLocaleString();
+    document.getElementById('precCliente').textContent = data.cliente || 'Cliente Casual';
+
+    const tbody = document.getElementById('precItemsBody');
+    tbody.innerHTML = '';
+
+    if (data.items && data.items.length > 0) {
+      data.items.forEach(it => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px dashed #f1f5f9';
+
+        let notasExtras = '';
+        if (it.nota) notasExtras += '<div style="font-size:10px;color:#0284c7;font-style:italic;">Nota: ' + it.nota + '</div>';
+        if (it.cremas) notasExtras += '<div style="font-size:10px;color:#b45309;">🥣 ' + it.cremas + '</div>';
+        if (it.salsas) notasExtras += '<div style="font-size:10px;color:#dc2626;">🌶 ' + it.salsas + '</div>';
+
+        tr.innerHTML = `
+          <td style="padding:6px 0;vertical-align:top;">${it.cantidad || 1}</td>
+          <td style="padding:6px 8px;vertical-align:top;">
+            <b>${it.producto || 'Plato'}</b>
+            ${notasExtras}
+          </td>
+          <td style="padding:6px 0;text-align:right;vertical-align:top;font-weight:700;">
+            S/ ${(it.subtotal || 0).toFixed(2)}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } else {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:10px;">Sin ítems</td></tr>';
+    }
+
+    document.getElementById('precSubtotal').textContent = 'S/ ' + (data.subtotal || 0).toFixed(2);
+    document.getElementById('precIgv').textContent = 'S/ ' + (data.igv || 0).toFixed(2);
+    document.getElementById('precTotal').textContent = 'S/ ' + (data.total || 0).toFixed(2);
+
+    if (data.costoDelivery && data.costoDelivery > 0) {
+      document.getElementById('precFilaDelivery').style.display = 'flex';
+      document.getElementById('precDelivery').textContent = 'S/ ' + data.costoDelivery.toFixed(2);
+    } else {
+      document.getElementById('precFilaDelivery').style.display = 'none';
+    }
+
+    if (data.idPrecuenta) {
+      document.getElementById('btnProcederPagar').href = '/caja/pago/precuenta/' + data.idPrecuenta;
+    } else {
+      document.getElementById('btnProcederPagar').href = '/caja/pago/' + data.idPedido;
+    }
+
+    document.getElementById('modalPrecuenta').classList.add('open');
+  }
+
+  function cerrarModalPrecuenta() {
+    document.getElementById('modalPrecuenta').classList.remove('open');
+  }
+
+  function imprimirPrecuenta() {
+    window.print();
+  }
+
+  // Si viene con auto-ver en la URL
+  if (autoVerPrecuentaId) {
+    abrirModalPrecuentaPorId(autoVerPrecuentaId);
+  }
+</script>
+</body>
+</html>

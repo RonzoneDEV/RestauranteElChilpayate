@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registrar Gasto · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header">
+        <div>
+          <div class="eyebrow">Administración y Egresos</div>
+          <h2>Registrar Gasto Operativo</h2>
+          <p class="muted">Registra una compra o egreso para mantener el arqueo diario y la contabilidad.</p>
+        </div>
+        <div>
+          <a class="btn btn-secondary" th:href="@{/gastos}">← Volver al listado</a>
+        </div>
+      </div>
+
+      <div class="card" style="max-width: 650px;">
+        <form th:action="@{/gastos/create}" th:object="${gasto}" method="post">
+          <div class="form-grid">
+            <div>
+              <label class="form-label">Fecha del gasto *</label>
+              <input class="form-control" type="date" th:field="*{fecha}" required>
+            </div>
+
+            <div>
+              <label class="form-label">Monto (S/) *</label>
+              <input class="form-control" type="number" step="0.01" min="0.01" th:field="*{monto}" placeholder="0.00" required>
+            </div>
+
+            <div class="full">
+              <label class="form-label">Concepto / Motivo *</label>
+              <input class="form-control" th:field="*{concepto}" placeholder="Ej: Compra de 50 kg de alas de pollo" required>
+            </div>
+
+            <div class="full">
+              <label class="form-label">Proveedor (Opcional)</label>
+              <select class="form-select" th:field="*{proveedor}">
+                <option value="">-- Sin proveedor específico --</option>
+                <option th:each="p : ${proveedores}" th:value="${p.idProveedor}" th:text="${p.razonSocial}"></option>
+              </select>
+            </div>
+
+            <div class="full">
+              <label class="form-label">Observación adicional</label>
+              <textarea class="form-control" rows="2" th:field="*{observacion}" placeholder="N.º factura, notas, condiciones, etc."></textarea>
+            </div>
+          </div>
+
+          <div class="actions" style="margin-top: 20px;">
+            <button type="submit" class="btn btn-primary">Registrar gasto</button>
+            <a class="btn btn-secondary" th:href="@{/gastos}">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

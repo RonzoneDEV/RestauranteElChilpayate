@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="8">
+  <title>Despacho de Mozos · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css(v='3.2')}">
+  <style>
+    .dispatch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 20px;
+      align-items: start;
+    }
+    .dispatch-card {
+      background: #ffffff;
+      border: 2px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 18px 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s ease;
+      height: 560px;
+      min-height: 560px;
+      max-height: 560px;
+      overflow: hidden;
+    }
+    .dispatch-card.listo-total {
+      border-color: #22c55e;
+      box-shadow: 0 12px 30px rgba(34, 197, 94, 0.15);
+    }
+    .dispatch-card.pendiente {
+      border-color: #f59e0b;
+      box-shadow: 0 12px 30px rgba(245, 158, 11, 0.12);
+    }
+    .dispatch-card-head {
+      flex-shrink: 0;
+      margin-bottom: 10px;
+    }
+    .dispatch-progress-wrap {
+      flex-shrink: 0;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+    }
+    .dispatch-progress-bar-bg {
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .dispatch-progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #f59e0b, #22c55e);
+      border-radius: 999px;
+      transition: width 0.3s ease;
+    }
+    .dispatch-card-body {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 6px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .dispatch-card-body::-webkit-scrollbar {
+      width: 6px;
+    }
+    .dispatch-card-body::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 8px;
+    }
+    .dispatch-card-body::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 8px;
+    }
+    .dispatch-card-body::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .dispatch-card-footer {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .dispatch-filters-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 18px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-bottom: 4px;
+    }
+    .dispatch-filters-bar::-webkit-scrollbar {
+      display: none;
+    }
+    .dispatch-filter-btn {
+      background: #ffffff;
+      color: #64748b;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dispatch-filter-btn:hover {
+      color: #0f172a;
+      border-color: #94a3b8;
+    }
+    .dispatch-filter-btn.active {
+      background: #16a34a;
+      color: #ffffff;
+      border-color: #16a34a;
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+    }
+    .ticket-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+    .ticket-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px dashed #cbd5e1;
+    }
+    .sublist-header {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 6px 0 4px 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dish-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 8px;
+      margin-bottom: 4px;
+      border-radius: 8px;
+      transition: background 0.15s ease;
+    }
+    .dish-row.pending {
+      background: #ffffff;
+      border: 1px solid #f1f5f9;
+    }
+    .dish-row.ready {
+      background: rgba(220, 252, 231, 0.45);
+      border: 1px solid #bbf7d0;
+    }
+    .badge-preparando {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fcd34d;
+      font-weight: 800;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .badge-listo {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+      font-weight: 800;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(34, 197, 94, 0.15);
+    }
+    .btn-entregar-activo {
+      background: #22c55e !important;
+      color: #052e16 !important;
+      font-weight: 800 !important;
+      cursor: pointer !important;
+      box-shadow: 0 4px 14px rgba(34, 197, 94, 0.35) !important;
+      transition: all 0.2s ease !important;
+      min-height: 48px !important;
+      font-size: 15px !important;
+    }
+    .btn-entregar-activo:hover {
+      background: #16a34a !important;
+      color: #ffffff !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 6px 18px rgba(34, 197, 94, 0.5) !important;
+    }
+    .btn-bloqueado,
+    button:disabled.btn-bloqueado {
+      background: #f1f5f9 !important;
+      color: #94a3b8 !important;
+      border: 1px solid #cbd5e1 !important;
+      cursor: not-allowed !important;
+      opacity: 0.75 !important;
+      box-shadow: none !important;
+      transform: none !important;
+      min-height: 48px !important;
+      font-size: 14px !important;
+    }
+
+    /* Reglas para Celular y Tablet */
+    @media (max-width: 768px) {
+      .dispatch-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+      }
+      .dispatch-header-actions {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        width: 100% !important;
+      }
+      .dispatch-header-actions .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        min-height: 44px !important;
+        font-size: 13px !important;
+      }
+      .dispatch-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+      }
+      .dispatch-card {
+        height: auto !important;
+        min-height: 440px !important;
+        max-height: 78vh !important;
+        padding: 14px 16px !important;
+        border-radius: 16px !important;
+      }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .dispatch-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 16px !important;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content" style="max-width: 1600px;">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header dispatch-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+        <div>
+          <div class="eyebrow" style="color: #16a34a;">Atención y Servicio al Cliente</div>
+          <h1 class="page-title">🛎 Despacho de Mozos - Control de Platos</h1>
+          <p class="muted" style="margin: 0;">Supervisa platos preparados y entrega la comanda al completarse.</p>
+        </div>
+        <div class="dispatch-header-actions" style="display: flex; gap: 10px; align-items: center;">
+          <span style="background: rgba(34, 197, 94, 0.1); color: #16a34a; border: 1px solid #86efac; padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+            <span style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; box-shadow: 0 0 8px #22c55e;"></span>
+            En vivo (8s)
+          </span>
+          <a class="btn btn-soft" th:href="@{/despacho}">🔄 Actualizar</a>
+          <a class="btn btn-primary" th:href="@{/salon}">▦ Ir al Salón</a>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros Rápidos -->
+      <div class="dispatch-filters-bar">
+        <span style="font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-right: 4px;">Filtro:</span>
+        <button type="button" class="dispatch-filter-btn active" onclick="filtrarDespacho('TODOS')">
+          📋 Todos (<span th:text="${pedidosDespacho != null ? #lists.size(pedidosDespacho) : 0}">0</span>)
+        </button>
+        <button type="button" class="dispatch-filter-btn" onclick="filtrarDespacho('LISTOS')">
+          ✅ Listos para Servir
+        </button>
+        <button type="button" class="dispatch-filter-btn" onclick="filtrarDespacho('COCINA')">
+          ⏳ En Cocina
+        </button>
+      </div>
+
+      <!-- Cuadrícula de Comandas Agrupadas por Pedido / Mesa con Altura Predeterminada -->
+      <div th:if="${not #lists.isEmpty(pedidosDespacho)}" class="dispatch-grid">
+        <div th:each="dp : ${pedidosDespacho}"
+             th:class="${'dispatch-card ' + (dp.puedeServir ? 'listo-total' : 'pendiente')}">
+          
+          <!-- Encabezado de la Tarjeta (Fijo) -->
+          <div class="dispatch-card-head">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <span th:if="${dp.pedido != null and dp.pedido.mesa != null}"
+                      class="badge" style="background: #15803d; color: #fff; font-size: 17px; font-weight: 900; padding: 5px 12px; border-radius: 10px;"
+                      th:text="'MESA ' + ${dp.pedido.mesa.numero}"></span>
+                <span th:if="${dp.pedido != null and dp.pedido.mesa == null}"
+                      class="badge" style="background: #7c3aed; color: #fff; font-size: 17px; font-weight: 900; padding: 5px 12px; border-radius: 10px;">DELIVERY</span>
+                
+                <div class="muted" style="font-size: 12px; margin-top: 4px;">
+                  Comanda: <b th:text="${dp.pedido != null ? dp.pedido.codigo : ''}"></b>
+                </div>
+              </div>
+
+              <!-- Indicador Global de Estado de la Comanda -->
+              <div style="text-align: right;">
+                <span th:if="${dp.puedeServir}"
+                      class="badge" style="background: #22c55e; color: #052e16; font-size: 12px; font-weight: 900; padding: 5px 10px; border-radius: 8px;">
+                  ✅ LISTO
+                </span>
+                <span th:unless="${dp.puedeServir}"
+                      class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #f59e0b; font-size: 12px; font-weight: 800; padding: 5px 10px; border-radius: 8px;">
+                  ⏳ EN COCINA
+                </span>
+                <div style="font-size: 11px; color: #64748b; margin-top: 3px;">
+                  <span th:text="${dp.totalTickets}">1</span> Ticket(s)
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Barra de Progreso y Resumen de Platos (Fijo) -->
+          <div class="dispatch-progress-wrap">
+            <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: #334155;">
+              <span>🍽 Platos listos: <span th:text="${dp.productosListos}">0</span> / <span th:text="${dp.totalProductos}">0</span></span>
+              <span>📋 Tickets: <span th:text="${dp.ticketsListos}">0</span> / <span th:text="${dp.totalTickets}">0</span></span>
+            </div>
+            <div class="dispatch-progress-bar-bg">
+              <div class="dispatch-progress-bar-fill"
+                   th:style="'width: ' + (${dp.totalProductos} > 0 ? (${dp.productosListos} * 100 / ${dp.totalProductos}) : 0) + '%;'"></div>
+            </div>
+          </div>
+
+          <!-- Contenedor Scrollable Interno con Tamaño Predeterminado -->
+          <div class="dispatch-card-body">
+            <div th:each="t : ${dp.tickets}" class="ticket-box">
+              <!-- Cabecera de cada Ticket -->
+              <div class="ticket-header">
+                <div>
+                  <b style="font-size: 13px; color: #0f172a;" th:text="'Ticket #' + ${t.correlativo}"></b>
+                  <small class="muted" style="margin-left: 6px;" th:text="${#temporals.format(t.fechaHora, 'HH:mm:ss')}"></small>
+                </div>
+                <div>
+                  <span th:if="${t.estado.name() == 'LISTO'}" class="badge-listo">
+                    ✅ Cocina Listo
+                  </span>
+                  <span th:if="${t.estado.name() == 'PREPARANDO'}" class="badge-preparando">
+                    ⏳ Preparando
+                  </span>
+                  <span th:if="${t.estado.name() == 'IMPRESO'}" class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 800; font-size: 10px;">
+                    ⏳ En Cola
+                  </span>
+                </div>
+              </div>
+
+              <!-- 1. Platos AÚN NO LISTOS / EN COCINA (ARRIBA) -->
+              <div>
+                <div th:each="d : ${t.detallePedido}"
+                     th:if="${d.estado.name() != 'ANULADO' and d.estado.name() != 'LISTO' and d.estado.name() != 'ENTREGADO'}"
+                     class="dish-row pending">
+                  <div style="flex: 1; padding-right: 8px;">
+                    <b style="font-size: 13px; color: #1e293b;" th:text="${d.producto != null ? d.producto.nombre : 'Plato'}"></b>
+                    
+                    <div th:if="${d.nota != null and !d.nota.isBlank()}" style="font-size: 11px; color: #0284c7; margin-top: 2px;">
+                      📝 <span th:text="${d.nota}"></span>
+                    </div>
+                    <div th:if="${d.detallePedidoCrema != null and not #lists.isEmpty(d.detallePedidoCrema)}" style="font-size: 11px; color: #d97706; margin-top: 2px;">
+                      🥣 Cremas: <span th:each="c, iter : ${d.detallePedidoCrema}" th:text="${c.crema != null ? c.crema.nombre : ''} + (${iter.last} ? '' : ', ')"></span>
+                    </div>
+                    <div th:if="${d.detallePedidoSalsa != null and not #lists.isEmpty(d.detallePedidoSalsa)}" style="font-size: 11px; color: #dc2626; margin-top: 2px;">
+                      🌶 Salsas: <span th:each="s, iter : ${d.detallePedidoSalsa}" th:text="${s.salsa != null ? s.salsa.nombre : ''} + (${iter.last} ? '' : ', ')"></span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="badge-preparando">⏳ Cocina</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. Platos YA LISTOS / CHECK POR COCINA (ABAJO) -->
+              <div>
+                <div th:each="d : ${t.detallePedido}"
+                     th:if="${d.estado.name() == 'LISTO'}"
+                     class="dish-row ready">
+                  <div style="flex: 1; padding-right: 8px;">
+                    <span style="font-size: 13px; font-weight: 700; color: #166534;" th:text="${d.producto != null ? d.producto.nombre : 'Plato'}"></span>
+                    
+                    <div th:if="${d.nota != null and !d.nota.isBlank()}" style="font-size: 11px; color: #0284c7; margin-top: 2px;">
+                      📝 <span th:text="${d.nota}"></span>
+                    </div>
+                    <div th:if="${d.detallePedidoCrema != null and not #lists.isEmpty(d.detallePedidoCrema)}" style="font-size: 11px; color: #d97706; margin-top: 2px;">
+                      🥣 Cremas: <span th:each="c, iter : ${d.detallePedidoCrema}" th:text="${c.crema != null ? c.crema.nombre : ''} + (${iter.last} ? '' : ', ')"></span>
+                    </div>
+                    <div th:if="${d.detallePedidoSalsa != null and not #lists.isEmpty(d.detallePedidoSalsa)}" style="font-size: 11px; color: #dc2626; margin-top: 2px;">
+                      🌶 Salsas: <span th:each="s, iter : ${d.detallePedidoSalsa}" th:text="${s.salsa != null ? s.salsa.nombre : ''} + (${iter.last} ? '' : ', ')"></span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="badge-listo">✅ Listo</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Pie de Tarjeta Fijo: Advertencia o Listo + Botón de Acción -->
+          <div class="dispatch-card-footer">
+            <div th:if="${not dp.puedeServir}"
+                 style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 8px 12px; display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 18px;">⚠️</span>
+              <span style="font-size: 12px; font-weight: 700; color: #92400e; line-height: 1.3;" th:text="${dp.motivoBloqueo}"></span>
+            </div>
+
+            <div th:if="${dp.puedeServir}"
+                 style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 8px 12px; display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 18px;">🛎</span>
+              <span style="font-size: 12px; font-weight: 800; color: #166534; line-height: 1.3;">¡Comanda completa! Lista para servir a la mesa.</span>
+            </div>
+
+            <form th:action="@{'/despacho/entregar-pedido/' + ${dp.pedido.idPedido}}" method="post">
+              <button type="submit"
+                      class="btn btn-primary"
+                      th:disabled="${not dp.puedeServir}"
+                      th:class="${'btn ' + (dp.puedeServir ? 'btn-entregar-activo' : 'btn-bloqueado')}"
+                      style="width: 100%; font-size: 14px; padding: 11px; border-radius: 10px;"
+                      th:title="${dp.puedeServir ? 'Confirmar entrega de todos los platos a la mesa' : dp.motivoBloqueo}">
+                🍽 Servido / Entregado a Mesa
+              </button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Estado vacío si no hay comandas pendientes en despacho -->
+      <div th:if="${#lists.isEmpty(pedidosDespacho)}"
+           class="card" style="text-align: center; padding: 60px 20px; border-radius: 20px; background: #ffffff;">
+        <span style="font-size: 54px; display: block; margin-bottom: 12px;">🛎</span>
+        <b style="font-size: 20px; color: #1e293b;">No hay platos pendientes por recoger en barra de despacho.</b>
+        <p class="muted" style="margin: 8px 0 0; font-size: 15px;">Cuando la cocina prepare y marque pedidos como listos, aparecerán inmediatamente aquí.</p>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  function filtrarDespacho(tipo) {
+    const cards = document.querySelectorAll('.dispatch-card');
+    const btns = document.querySelectorAll('.dispatch-filter-btn');
+    btns.forEach(b => b.classList.remove('active'));
+
+    if (window.event && window.event.currentTarget) {
+      window.event.currentTarget.classList.add('active');
+    }
+
+    cards.forEach(card => {
+      if (tipo === 'TODOS') {
+        card.style.display = 'flex';
+      } else if (tipo === 'LISTOS') {
+        card.style.display = card.classList.contains('listo-total') ? 'flex' : 'none';
+      } else if (tipo === 'COCINA') {
+        card.style.display = card.classList.contains('pendiente') ? 'flex' : 'none';
+      }
+    });
+  }
+</script>
+</body>
+</html>

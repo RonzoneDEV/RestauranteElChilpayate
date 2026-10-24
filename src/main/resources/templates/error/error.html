@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${errorTitulo != null ? errorTitulo + ' · El Chilpayate' : 'Incidencia · El Chilpayate'}">Error · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+  <style>
+    .error-wrapper {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: radial-gradient(circle at top, #fffaf3, #fdf4e8 60%, #faecd8);
+    }
+    .error-box {
+      max-width: 580px;
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      box-shadow: 0 20px 45px rgba(70,42,16,.12);
+      padding: 40px;
+      text-align: center;
+      animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes popIn {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .error-icon-badge {
+      width: 88px;
+      height: 88px;
+      border-radius: 24px;
+      background: #fff3d2;
+      border: 2px solid #fed7aa;
+      display: grid;
+      place-items: center;
+      font-size: 42px;
+      margin: 0 auto 20px;
+    }
+    .error-code {
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #b45309;
+      background: #fef3c7;
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 12px;
+    }
+    .error-details {
+      margin-top: 24px;
+      padding: 14px;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      text-align: left;
+      font-size: 12px;
+      color: #64748b;
+      font-family: monospace;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+<div class="error-wrapper">
+  <div class="error-box">
+    <div class="error-icon-badge">🍳</div>
+    
+    <div class="error-code" th:text="${codigoEstado != null ? 'Código ' + codigoEstado : 'Incidencia'}">Código 500</div>
+    
+    <h2 style="font-size: 26px; color: #2b1d14; margin: 0 0 10px;" th:text="${errorTitulo != null ? errorTitulo : '¡Ups! Algo se detuvo en la cocina'}">
+      Incidencia en la Operación
+    </h2>
+    
+    <p class="muted" style="font-size: 15px; line-height: 1.5; margin: 0 0 24px;" th:text="${mensaje != null ? mensaje : 'Ocurrió un contratiempo temporal al procesar su solicitud.'}">
+      No pudimos completar la acción solicitada. El sistema ha registrado el evento.
+    </p>
+
+    <!-- Botones de Acción Inmediata -->
+    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+      <a class="btn btn-primary" th:href="@{/salon}" style="padding: 12px 20px;">
+        ▦ Ir al Salón de Mesas
+      </a>
+      <a class="btn btn-soft" th:href="@{/dashboard}" style="padding: 12px 20px;">
+        ⌂ Panel Principal
+      </a>
+      <button class="btn btn-soft" onclick="window.history.back()" style="padding: 12px 18px;">
+        ← Volver Atrás
+      </button>
+    </div>
+
+    <!-- Detalles técnicos colapsables -->
+    <details th:if="${detalleTecnico != null or ruta != null}" style="margin-top: 24px; text-align: left; font-size: 12px;">
+      <summary style="cursor: pointer; color: #94a3b8; font-weight: 700;">Detalles de depuración técnica</summary>
+      <div class="error-details">
+        <div th:if="${ruta != null}"><b>Ruta:</b> <span th:text="${ruta}"></span></div>
+        <div th:if="${fechaHora != null}"><b>Fecha y Hora:</b> <span th:text="${fechaHora}"></span></div>
+        <div th:if="${detalleTecnico != null}" style="margin-top: 6px;"><b>Excepción:</b> <span th:text="${detalleTecnico}"></span></div>
+      </div>
+    </details>
+
+    <div style="margin-top: 30px; font-size: 12px; color: #a89f91;">
+      El Chilpayate · Sistema de Gestión Gastronómica
+    </div>
+  </div>
+</div>
+</body>
+</html>

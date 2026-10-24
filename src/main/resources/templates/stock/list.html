@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Movimiento de Stock · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <div class="eyebrow">Almacén e Inventario</div>
+          <h1 class="page-title" style="margin: 0;">Kardex y Movimientos de Stock</h1>
+          <p class="muted" style="margin-top: 4px;">Trazabilidad de entradas (compras), salidas (ventas), mermas y ajustes manuales de inventario.</p>
+        </div>
+        <a th:href="@{/stock/rapido}" class="btn" style="display: inline-flex; align-items: center; gap: 8px; font-weight: bold; background: linear-gradient(135deg, #f59e0b, #ea580c); color: #fff; border: none; padding: 10px 18px; border-radius: 12px; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.28); text-decoration: none;">
+          ⚡ Control Rápido de Carta (Express)
+        </a>
+      </div>
+
+      <div class="grid grid-2" style="margin-bottom: 24px;">
+        <!-- Formulario de Registro de Stock -->
+        <div class="card">
+          <div class="section-head">
+            <h3 style="margin: 0;">+ Registrar Movimiento de Inventario</h3>
+          </div>
+          <form method="post" th:action="@{/stock/registrar}">
+            <div style="margin-bottom: 14px;">
+              <label class="form-label">Producto *</label>
+              <select name="idProducto" class="form-select" required>
+                <option value="">-- Seleccionar Producto --</option>
+                <option th:each="p : ${productos}" th:value="${p.idProducto}"
+                        th:text="${p.nombre + ' (Stock actual: ' + p.stock + ')'}"></option>
+              </select>
+            </div>
+
+            <div class="form-grid" style="margin-bottom: 14px;">
+              <div>
+                <label class="form-label">Tipo de Movimiento *</label>
+                <select name="tipoMovimiento" class="form-select" required>
+                  <option value="ENTRADA">📦 ENTRADA (Compra / Ingreso)</option>
+                  <option value="SALIDA">↘ SALIDA (Consumo / Retiro)</option>
+                  <option value="MERMA">⚠️ MERMA (Daño / Vencimiento)</option>
+                  <option value="AJUSTE">⚙️ AJUSTE (Conteo físico)</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">Cantidad / Nuevo Valor *</label>
+                <input type="number" name="cantidad" class="form-control" min="1" required placeholder="Ej: 10">
+              </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+              <label class="form-label">Motivo o Justificación *</label>
+              <input type="text" name="motivo" class="form-control" required placeholder="Ej: Factura Proveedor F001-234, inventario mensual...">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Registrar Movimiento</button>
+          </form>
+        </div>
+
+        <!-- Filtro por Producto -->
+        <div class="card">
+          <div class="section-head">
+            <h3 style="margin: 0;">Filtrar Kardex</h3>
+          </div>
+          <form method="get" th:action="@{/stock}">
+            <div style="margin-bottom: 16px;">
+              <label class="form-label">Consultar historial de un producto específico</label>
+              <select name="idProducto" class="form-select">
+                <option value="">-- Ver todos los movimientos recientes --</option>
+                <option th:each="p : ${productos}" th:value="${p.idProducto}"
+                        th:selected="${p.idProducto == idProductoSeleccionado}"
+                        th:text="${p.nombre}"></option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-soft" style="width: 100%;">Filtrar Movimientos</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Tabla Kardex -->
+      <div class="card">
+        <div class="section-head">
+          <h3 style="margin: 0;">Historial de Movimientos</h3>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Fecha / Hora</th>
+                <th>Producto</th>
+                <th>Tipo</th>
+                <th>Cantidad</th>
+                <th>Stock Ant.</th>
+                <th>Stock Nuevo</th>
+                <th>Motivo</th>
+                <th>Responsable</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="m : ${movimientos}">
+                <td th:text="${#temporals.format(m.fechaHora, 'dd/MM/yyyy HH:mm')}"></td>
+                <td><b th:text="${m.producto != null ? m.producto.nombre : 'Producto'}"></b></td>
+                <td>
+                  <span th:class="${m.tipoMovimiento.name() == 'ENTRADA' ? 'badge badge-ok' : (m.tipoMovimiento.name() == 'MERMA' ? 'badge badge-bad' : 'badge badge-warn')}"
+                        th:text="${m.tipoMovimiento}"></span>
+                </td>
+                <td style="font-weight: 700;" th:text="${m.cantidad}"></td>
+                <td th:text="${m.stockAnterior}"></td>
+                <td style="font-weight: 800; color: var(--brown);" th:text="${m.stockNuevo}"></td>
+                <td th:text="${m.motivo}"></td>
+                <td th:text="${m.usuario != null ? m.usuario.nombres : 'Sistema'}"></td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(movimientos)}">
+                <td colspan="8" class="muted" style="text-align: center; padding: 30px;">No se registran movimientos de stock para el criterio seleccionado.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+</body>
+</html>

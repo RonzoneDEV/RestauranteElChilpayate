@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Consultas de Incidentes · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header" style="margin-bottom: 24px;">
+        <div class="eyebrow">Auditoría y Calidad</div>
+        <h1 class="page-title">Consultas de Incidentes y Reportes</h1>
+        <p class="muted">Registro y trazabilidad de eventos anómalos: platos devueltos, mermas de cocina, quejas de comensales y cancelaciones.</p>
+      </div>
+
+      <!-- Métricas de Incidentes -->
+      <div class="grid grid-4" style="margin-bottom: 24px;">
+        <div class="card metric">
+          <div>
+            <div class="label">Total Incidentes</div>
+            <div class="value negative" th:text="${totalIncidentes}">0</div>
+          </div>
+          <div class="bubble">⚠️</div>
+        </div>
+        <div class="card metric">
+          <div>
+            <div class="label">Con Retorno a Stock</div>
+            <div class="value positive" th:text="${conDevolucionStock}">0</div>
+          </div>
+          <div class="bubble">📦</div>
+        </div>
+        <div class="card metric">
+          <div>
+            <div class="label">Auditoría Activa</div>
+            <div class="value" style="font-size: 20px;">100% Online</div>
+          </div>
+          <div class="bubble">🛡</div>
+        </div>
+        <div class="card metric">
+          <div>
+            <div class="label">Impacto Operativo</div>
+            <div class="value" style="font-size: 20px; color: var(--amber);">Controlado</div>
+          </div>
+          <div class="bubble">📉</div>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-bottom: 24px;">
+        <!-- Formulario de Registro de Incidente -->
+        <div class="card">
+          <div class="section-head">
+            <h3 style="margin: 0;">+ Registrar Nuevo Incidente</h3>
+          </div>
+          <form method="post" th:action="@{/incidentes/create}">
+            <div class="form-grid" style="margin-bottom: 14px;">
+              <div>
+                <label class="form-label">Tipo de Incidente *</label>
+                <select name="tipo" class="form-select" required>
+                  <option value="PLATO_DEVUELTO">🍽 Plato Devuelto / Queja de Sabor</option>
+                  <option value="ERROR_COCINA">🍳 Error de Preparación en Cocina</option>
+                  <option value="MERMA_COCINA">⚠️ Merma / Accidente con Insumo</option>
+                  <option value="CANCELACION_PEDIDO">❌ Cancelación de Orden por Cliente</option>
+                  <option value="QUEJA_SERVICIO">👥 Reclamo en Atención de Salón</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">Comanda Asociada (Opcional)</label>
+                <select name="idPedido" class="form-select">
+                  <option value="">-- Sin Comanda Específica --</option>
+                  <option th:each="p : ${pedidos}" th:value="${p.idPedido}"
+                          th:text="${(p.codigo != null ? p.codigo : ('#' + p.idPedido)) + (p.mesa != null ? ' - Mesa ' + p.mesa.numero : '')}"></option>
+                </select>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+              <label class="form-label">Detalle de lo Ocurrido *</label>
+              <textarea name="detalle" class="form-control" rows="2" required placeholder="Describa el hecho ocurrido..."></textarea>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+              <label class="form-label">Causa o Justificación *</label>
+              <input type="text" name="motivo" class="form-control" required placeholder="Ej: Salsa demasiado picante para el comensal...">
+            </div>
+
+            <div style="margin-bottom: 16px;">
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">
+                <input type="checkbox" name="devolvioStock" value="true">
+                ¿Se devolvió insumo al stock? (Marcar sólo si el producto puede reintegrarse)
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Registrar Incidente</button>
+          </form>
+        </div>
+
+        <!-- Filtro por Tipo de Incidente -->
+        <div class="card">
+          <div class="section-head">
+            <h3 style="margin: 0;">Filtrar Reporte de Incidentes</h3>
+          </div>
+          <form method="get" th:action="@{/incidentes}">
+            <div style="margin-bottom: 16px;">
+              <label class="form-label">Tipo de Suceso</label>
+              <select name="tipo" class="form-select">
+                <option value="">-- Ver todos los tipos de incidentes --</option>
+                <option value="PLATO_DEVUELTO" th:selected="${tipoSeleccionado == 'PLATO_DEVUELTO'}">🍽 Platos Devueltos</option>
+                <option value="ERROR_COCINA" th:selected="${tipoSeleccionado == 'ERROR_COCINA'}">🍳 Errores de Cocina</option>
+                <option value="MERMA_COCINA" th:selected="${tipoSeleccionado == 'MERMA_COCINA'}">⚠️ Mermas</option>
+                <option value="CANCELACION_PEDIDO" th:selected="${tipoSeleccionado == 'CANCELACION_PEDIDO'}">❌ Cancelaciones</option>
+                <option value="QUEJA_SERVICIO" th:selected="${tipoSeleccionado == 'QUEJA_SERVICIO'}">👥 Quejas de Servicio</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-soft" style="width: 100%;">Filtrar Incidentes</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Tabla de Reporte de Incidentes -->
+      <div class="card">
+        <div class="section-head">
+          <h3 style="margin: 0;">Auditoría de Incidentes</h3>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Fecha / Hora</th>
+                <th>Tipo</th>
+                <th>Comanda</th>
+                <th>Detalle del Incidente</th>
+                <th>Motivo</th>
+                <th>Retorno Stock</th>
+                <th>Registrado Por</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="i : ${incidentes}">
+                <td th:text="${#temporals.format(i.fechaHora, 'dd/MM/yyyy HH:mm')}"></td>
+                <td>
+                  <span class="badge badge-warn" th:text="${i.tipo}"></span>
+                </td>
+                <td>
+                  <b th:if="${i.pedido != null}" th:text="${i.pedido.codigo != null ? i.pedido.codigo : ('#' + i.pedido.idPedido)}"></b>
+                  <span th:if="${i.pedido == null}" class="muted">-</span>
+                </td>
+                <td th:text="${i.detalle}"></td>
+                <td th:text="${i.motivo}"></td>
+                <td>
+                  <span th:class="${i.devolvioStock ? 'badge badge-ok' : 'badge badge-bad'}"
+                        th:text="${i.devolvioStock ? 'SÍ' : 'NO'}"></span>
+                </td>
+                <td th:text="${i.usuario != null ? i.usuario.nombres : 'Sistema'}"></td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(incidentes)}">
+                <td colspan="7" class="muted" style="text-align: center; padding: 30px;">No se registran incidentes en la auditoría.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+</body>
+</html>

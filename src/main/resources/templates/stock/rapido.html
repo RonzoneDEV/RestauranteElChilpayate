@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Control Rápido de Stock · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css(v='3.2')}">
+  <!-- Phosphor Icons para simbología táctil -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <style>
+    /* Estilos específicos adaptados a la paleta de El Chilpayate */
+    .stock-card {
+      background: var(--card);
+      border: 1.5px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .stock-card:hover {
+      box-shadow: 0 14px 32px rgba(70,42,16,.14);
+      border-color: #d8c2ae;
+    }
+    .stock-card.estado-disponible {
+      border-color: var(--line);
+    }
+    .stock-card.estado-critico {
+      border-color: #f59e0b;
+      background: linear-gradient(180deg, #fffcf5 0%, #ffffff 50%);
+      box-shadow: 0 8px 24px rgba(245, 158, 11, 0.12);
+    }
+    .stock-card.estado-agotado {
+      border-color: #f87171;
+      background: linear-gradient(180deg, #fff7f7 0%, #ffffff 50%);
+      box-shadow: 0 8px 24px rgba(239, 68, 68, 0.12);
+    }
+    .stock-bubble {
+      width: 44px;
+      height: 44px;
+      border-radius: 13px;
+      background: #fff3d2;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      flex-shrink: 0;
+      border: 1px solid rgba(255, 178, 29, 0.3);
+    }
+    .stock-stepper-wrap {
+      background: #faf6f0;
+      border: 1px solid #ebdccb;
+      border-radius: 15px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 12px 0 10px;
+    }
+    .btn-step-minus {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: #ffffff;
+      border: 1.5px solid #ded0be;
+      color: #6d5b4e;
+      font-size: 20px;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+    }
+    .btn-step-minus:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #b91c1c;
+      transform: scale(1.05);
+    }
+    .btn-step-minus:active {
+      transform: scale(0.95);
+    }
+    .btn-step-plus {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--amber);
+      border: none;
+      color: #2b1d14;
+      font-size: 20px;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      box-shadow: 0 4px 12px rgba(255, 178, 29, 0.35);
+    }
+    .btn-step-plus:hover {
+      background: #ffaa00;
+      transform: scale(1.05);
+    }
+    .btn-step-plus:active {
+      transform: scale(0.95);
+    }
+    .stock-input-giant {
+      width: 76px;
+      text-align: center;
+      font-size: 30px;
+      font-weight: 900;
+      border: none;
+      background: transparent;
+      outline: none;
+      color: var(--ink);
+      font-family: Inter, Segoe UI, sans-serif;
+      padding: 0;
+      border-radius: 8px;
+      transition: background 0.15s;
+    }
+    .stock-input-giant:focus {
+      background: #ffffff;
+      box-shadow: 0 0 0 2px var(--amber);
+    }
+    .stock-input-giant.agotado {
+      color: #dc2626;
+    }
+    /* Quitar flechas de input number */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+    .btn-shortcut {
+      padding: 7px 0;
+      font-size: 12px;
+      font-weight: 800;
+      border-radius: 9px;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      color: var(--brown);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+    .btn-shortcut:hover {
+      background: #fff4d6;
+      border-color: #fcd34d;
+      color: #98680a;
+      transform: translateY(-1px);
+    }
+    .btn-shortcut:active {
+      transform: scale(0.95);
+    }
+    .btn-shortcut-agotado {
+      background: #fff0f0;
+      border-color: #fecaca;
+      color: #dc2626;
+    }
+    .btn-shortcut-agotado:hover {
+      background: #fee2e2;
+      border-color: #f87171;
+      color: #991b1b;
+    }
+    #categoryContainer {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding-bottom: 8px;
+      max-width: 100%;
+      scrollbar-width: thin;
+      scrollbar-color: var(--amber) #f1f5f9;
+    }
+    #categoryContainer::-webkit-scrollbar {
+      height: 6px;
+      display: block;
+    }
+    #categoryContainer::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 999px;
+    }
+    #categoryContainer::-webkit-scrollbar-thumb {
+      background: var(--amber);
+      border-radius: 999px;
+    }
+    .cat-tab {
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      color: #55483f;
+    }
+    .cat-tab:hover {
+      background: #faf4ed;
+      color: var(--ink);
+    }
+    .cat-tab.active {
+      background: #2b1d14;
+      color: #ffffff;
+      border-color: #2b1d14;
+      box-shadow: 0 4px 10px rgba(43,29,20,.2);
+    }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(43, 29, 20, 0.55);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-box {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      max-width: 490px;
+      width: 100%;
+      padding: 26px;
+      box-shadow: 0 24px 55px rgba(43, 29, 20, 0.28);
+      position: relative;
+    }
+    .toast-popup {
+      position: fixed;
+      bottom: 24px;
+      right: 28px;
+      background: #2b1d14;
+      color: #ffffff;
+      padding: 12px 18px;
+      border-radius: 14px;
+      box-shadow: 0 14px 34px rgba(43, 29, 20, 0.25);
+      border: 1px solid rgba(255, 178, 29, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 13px;
+      z-index: 150;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: translateY(80px);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .toast-popup.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <!-- Menú Lateral Dinámico del Sistema -->
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <!-- Área de Contenido Principal -->
+  <main>
+    <!-- Barra Superior Topbar -->
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <!-- Alertas Flash -->
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <!-- Encabezado de la Vista -->
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 22px;">
+        <div>
+          <div class="eyebrow">Operación y Almacén · Servicio en Vivo</div>
+          <h1 class="page-title" style="margin: 4px 0 6px;">Control Rápido de Stock</h1>
+          <p class="muted" style="margin: 0;">Gestiona porciones disponibles, cambios en tiempo real y apertura rápida de turno para la carta del día.</p>
+        </div>
+
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <!-- Botón de Apertura de Turno -->
+          <button type="button" class="btn btn-primary" onclick="abrirModalTurno()" style="box-shadow: 0 4px 14px rgba(255, 178, 29, 0.35);">
+            <i class="ph-bold ph-sun-horizon" style="font-size: 18px;"></i>
+            <span>Apertura de Turno</span>
+          </button>
+
+          <!-- Selector de Modo de Vista -->
+          <div style="background: #ffffff; border: 1px solid var(--line); border-radius: 12px; padding: 4px; display: flex; gap: 4px; box-shadow: 0 2px 6px rgba(70,42,16,.04);">
+            <button id="btnViewGrid" onclick="cambiarVista('grid')" class="btn btn-sm" style="background: var(--ink); color: #ffffff; border-radius: 9px;" title="Tarjetas táctiles">
+              <i class="ph-bold ph-squares-four"></i> Tarjetas
+            </button>
+            <button id="btnViewTable" onclick="cambiarVista('table')" class="btn btn-sm" style="background: transparent; color: var(--muted); border-radius: 9px;" title="Tabla compacta">
+              <i class="ph-bold ph-table"></i> Tabla
+            </button>
+          </div>
+
+          <!-- Enlace a Kardex -->
+          <a th:href="@{/stock}" class="btn btn-soft" title="Ir al historial de movimientos de inventario">
+            <i class="ph-bold ph-archive"></i> Kardex
+          </a>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros, Categorías y Métricas -->
+      <div class="card" style="padding: 14px 18px; margin-bottom: 22px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+          
+          <!-- Pestañas de categorías dinámicas de la base de datos -->
+          <div id="categoryContainer" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; max-width: 100%;">
+            <!-- Renderizado dinámico -->
+          </div>
+
+          <!-- Buscador y Métricas Rápidas -->
+          <div style="display: flex; gap: 12px; align-items: center; flex-shrink: 0; flex-wrap: wrap;">
+            <div style="position: relative; min-width: 220px;">
+              <i class="ph-bold ph-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 16px;"></i>
+              <input type="text" id="searchInput" oninput="filtrarProductos()" placeholder="Buscar plato o bebida..." class="form-control" style="padding-left: 36px; height: 38px; font-size: 13px;">
+            </div>
+
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span id="statAgotados" class="badge badge-bad" style="font-size: 12px; padding: 6px 11px;">
+                <i class="ph-bold ph-x-circle"></i> 0 Agotados
+              </span>
+              <span id="statBajos" class="badge badge-warn" style="font-size: 12px; padding: 6px 11px;">
+                <i class="ph-bold ph-warning"></i> 0 Críticos
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- VISTA 1: GRID TÁCTIL (Tarjetas de Stock con Paleta El Chilpayate) -->
+      <div id="containerGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px;">
+        <!-- Insertadas por JS -->
+      </div>
+
+      <!-- VISTA 2: TABLA RÁPIDA (Optimizada para teclado y escritorio) -->
+      <div id="containerTable" style="display: none;" class="card">
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="padding: 14px 16px;">Producto & Código</th>
+                <th>Categoría</th>
+                <th style="text-align: center;">Nivel Stock</th>
+                <th style="text-align: center; width: 170px;">Ajuste Directo</th>
+                <th style="text-align: center; width: 200px;">Acciones Rápidas</th>
+                <th style="text-align: center; width: 130px;">Estado</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <!-- Insertadas por JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Estado Vacío -->
+      <div id="emptyState" class="card" style="display: none; text-align: center; padding: 48px 20px;">
+        <div style="width: 60px; height: 60px; border-radius: 50%; background: #fff3d2; color: var(--brown); margin: 0 auto 12px; display: grid; place-items: center; font-size: 28px;">
+          <i class="ph-bold ph-fork-knife"></i>
+        </div>
+        <h3 style="margin: 0 0 6px; font-size: 17px; color: var(--ink);">No se encontraron productos</h3>
+        <p class="muted" style="margin: 0; font-size: 13px;">Prueba buscando con otro término o seleccionando otra categoría de la carta.</p>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Modal: Apertura de Turno Rápida -->
+<div id="modalTurno" class="modal-backdrop">
+  <div class="modal-box">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--line); margin-bottom: 14px;">
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; color: var(--brown2);">
+        <i class="ph-bold ph-sun-horizon" style="font-size: 22px; color: var(--amber);"></i>
+        <span>Apertura de Turno Rápida</span>
+      </div>
+      <button type="button" onclick="cerrarModalTurno()" style="background: transparent; border: none; font-size: 20px; color: var(--muted); cursor: pointer; padding: 4px;">
+        <i class="ph-bold ph-x"></i>
+      </button>
+    </div>
+
+    <p class="muted" style="font-size: 13px; margin: 0 0 16px; line-height: 1.45;">
+      Asigna rápidamente porciones iniciales a todos los productos de la carta que actualmente se encuentren en <b>0 o agotados</b>.
+    </p>
+
+    <!-- Selector de Categoría -->
+    <div style="margin-bottom: 16px;">
+      <label class="form-label" style="font-size: 12px;">Categoría destino:</label>
+      <select id="modalCategoriaSelect" class="form-select" style="font-size: 13px; font-weight: 700;">
+        <option value="TODOS">⭐ Todas las Categorías (Platos, Bebidas, etc.)</option>
+      </select>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <div>
+        <label class="form-label" style="font-size: 12px;">Porciones estándar para Platos de Fondo:</label>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+          <button type="button" onclick="aplicarBaseTurnoSeleccionado(10)" class="btn btn-soft btn-sm" style="font-weight: 800;">10 uds</button>
+          <button type="button" onclick="aplicarBaseTurnoSeleccionado(20)" class="btn btn-soft btn-sm" style="font-weight: 800;">20 uds</button>
+          <button type="button" onclick="aplicarBaseTurnoSeleccionado(30)" class="btn btn-soft btn-sm" style="font-weight: 800;">30 uds</button>
+          <button type="button" onclick="aplicarBaseTurnoSeleccionado(50)" class="btn btn-soft btn-sm" style="font-weight: 800;">50 uds</button>
+        </div>
+      </div>
+
+      <div>
+        <label class="form-label" style="font-size: 12px;">Packs / Cajas para Bebidas o Insumos:</label>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+          <button type="button" onclick="aplicarBaseTurnoSeleccionado(12)" class="btn btn-soft btn-sm" style="font-weight: 800;">12 uds</button>
+          <button type="button" onclick="aplicarBaseTurnoSeleccionado(24)" class="btn btn-soft btn-sm" style="font-weight: 800;">24 uds</button>
+          <button type="button" onclick="aplicarBaseTurnoSeleccionado(36)" class="btn btn-soft btn-sm" style="font-weight: 800;">36 uds</button>
+          <button type="button" onclick="aplicarBaseTurnoSeleccionado(48)" class="btn btn-soft btn-sm" style="font-weight: 800;">48 uds</button>
+        </div>
+      </div>
+
+      <!-- Valor Personalizado -->
+      <div style="padding-top: 10px; border-top: 1px dashed var(--line); display: flex; gap: 8px;">
+        <input type="number" id="modalCustomStock" min="1" placeholder="Cant. personalizada..." class="form-control" style="font-size: 13px; height: 38px;">
+        <button type="button" onclick="aplicarBaseTurnoCustom()" class="btn btn-dark btn-sm" style="padding: 0 16px; flex-shrink: 0;">
+          Aplicar
+        </button>
+      </div>
+    </div>
+
+    <div style="margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end;">
+      <button type="button" onclick="cerrarModalTurno()" class="btn btn-soft btn-sm">
+        Cerrar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Flotante de Notificación -->
+<div id="toastNotification" class="toast-popup">
+  <div id="toastIcon" style="color: var(--amber); font-size: 18px; display: flex;">
+    <i class="ph-bold ph-check-circle"></i>
+  </div>
+  <span id="toastMessage">Stock sincronizado con el servidor</span>
+</div>
+
+<!-- LÓGICA JAVASCRIPT Y SINCRONIZACIÓN ASÍNCRONA -->
+<script th:inline="javascript">
+  /*<![CDATA[*/
+  const rawProductosJson = /*[[${productosJson}]]*/ '[]';
+  const rawCategoriasJson = /*[[${categoriasJson}]]*/ '[]';
+
+  let productos = [];
+  let categorias = [];
+
+  try {
+    productos = typeof rawProductosJson === 'string' ? JSON.parse(rawProductosJson) : rawProductosJson;
+    categorias = typeof rawCategoriasJson === 'string' ? JSON.parse(rawCategoriasJson) : rawCategoriasJson;
+  } catch (e) {
+    console.error("Error al parsear data del servidor", e);
+  }
+
+  let categoriaActual = 'TODOS';
+  let vistaActual = 'grid'; // 'grid' | 'table'
+
+  function resolverEmoji(nombre, categoria) {
+    const n = (nombre || '').toLowerCase();
+    const c = (categoria || '').toLowerCase();
+    if (n.includes('alita') || n.includes('pollo') || n.includes('broaster') || c.includes('alita')) return '🍗';
+    if (n.includes('lomo') || n.includes('carne') || n.includes('bife') || n.includes('parrilla')) return '🥩';
+    if (n.includes('costilla') || n.includes('bbq')) return '🍖';
+    if (n.includes('cerveza') || n.includes('trigo') || n.includes('pilsen') || n.includes('cusqueña')) return '🍺';
+    if (n.includes('limonada') || n.includes('frozen') || n.includes('chicha') || n.includes('maracuya')) return '🍋';
+    if (n.includes('kola') || n.includes('gaseosa') || c.includes('bebida')) return '🥤';
+    if (n.includes('papa') || n.includes('papas') || c.includes('salchipapa')) return '🍟';
+    if (n.includes('chaufa') || n.includes('arroz')) return '🍚';
+    if (n.includes('hamburguesa') || c.includes('hamburguesa')) return '🍔';
+    if (n.includes('tarta') || n.includes('torta') || n.includes('postre') || n.includes('leches') || c.includes('postre')) return '🍰';
+    if (c.includes('salsa') || n.includes('salsa')) return '🥫';
+    return '🍽️';
+  }
+
+  function init() {
+    productos.forEach(p => {
+      p.emoji = resolverEmoji(p.nombre, p.categoria);
+    });
+
+    renderCategorias();
+    poblarModalCategorias();
+    renderProductos();
+    actualizarContadoresGlobales();
+  }
+
+  function renderCategorias() {
+    const container = document.getElementById('categoryContainer');
+    container.innerHTML = categorias.map(cat => {
+      const activa = cat.id === categoriaActual;
+      return `
+        <button 
+          type="button"
+          onclick="seleccionarCategoria('${cat.id}')"
+          class="cat-tab ${activa ? 'active' : ''}">
+          <i class="ph-bold ${cat.icon || 'ph-tag'}"></i>
+          <span>${cat.label}</span>
+        </button>
+      `;
+    }).join('');
+  }
+
+  function poblarModalCategorias() {
+    const select = document.getElementById('modalCategoriaSelect');
+    if (!select) return;
+    let optionsHtml = `<option value="TODOS">⭐ Todas las Categorías (Platos, Bebidas, etc.)</option>`;
+    categorias.forEach(cat => {
+      if (cat.id !== 'TODOS') {
+        optionsHtml += `<option value="${cat.label}">${cat.label}</option>`;
+      }
+    });
+    select.innerHTML = optionsHtml;
+  }
+
+  function renderProductos() {
+    const search = document.getElementById('searchInput').value.toLowerCase().trim();
+    
+    const filtrados = productos.filter(p => {
+      const coincideCat = (categoriaActual === 'TODOS' || p.categoria === categoriaActual || (p.idCategoria && String(p.idCategoria) === String(categoriaActual)));
+      const coincideSearch = (p.nombre && p.nombre.toLowerCase().includes(search)) || 
+                             (p.codigo && p.codigo.toLowerCase().includes(search)) ||
+                             (p.categoria && p.categoria.toLowerCase().includes(search));
+      return coincideCat && coincideSearch;
+    });
+
+    const empty = document.getElementById('emptyState');
+    const cGrid = document.getElementById('containerGrid');
+    const cTable = document.getElementById('containerTable');
+
+    if (filtrados.length === 0) {
+      empty.style.display = 'block';
+      cGrid.style.display = 'none';
+      cTable.style.display = 'none';
+      return;
+    } else {
+      empty.style.display = 'none';
+      if (vistaActual === 'grid') {
+        cGrid.style.display = 'grid';
+        cTable.style.display = 'none';
+      } else {
+        cGrid.style.display = 'none';
+        cTable.style.display = 'block';
+      }
+    }
+
+    if (vistaActual === 'grid') {
+      renderGrid(filtrados);
+    } else {
+      renderTable(filtrados);
+    }
+  }
+
+  function renderGrid(lista) {
+    const container = document.getElementById('containerGrid');
+    container.innerHTML = lista.map(p => {
+      const esAgotado = p.stock === 0;
+      const esBajo = p.stock > 0 && p.stock <= p.minCritico;
+
+      let estadoClass = 'estado-disponible';
+      let badgeStatus = `<span class="badge badge-ok">Disponible</span>`;
+
+      if (esAgotado) {
+        estadoClass = 'estado-agotado';
+        badgeStatus = `<span class="badge badge-bad">Agotado</span>`;
+      } else if (esBajo) {
+        estadoClass = 'estado-critico';
+        badgeStatus = `<span class="badge badge-warn">Crítico</span>`;
+      }
+
+      const imagenHtml = p.imagen 
+        ? `<img src="${p.imagen}" alt="${p.nombre}" style="width: 44px; height: 44px; border-radius: 12px; object-fit: cover;">`
+        : `<div class="stock-bubble">${p.emoji}</div>`;
+
+      return `
+        <div class="stock-card ${estadoClass}">
+          <!-- Cabecera -->
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              ${imagenHtml}
+              <div>
+                <h4 style="margin: 0 0 3px; font-size: 14px; font-weight: 800; color: var(--ink); line-height: 1.25;">${p.nombre}</h4>
+                <span class="muted" style="font-size: 12px; font-weight: 600;">${p.codigo} · S/ ${Number(p.precio).toFixed(2)}</span>
+              </div>
+            </div>
+            <div>${badgeStatus}</div>
+          </div>
+
+          <!-- Stepper Central Gigante -->
+          <div class="stock-stepper-wrap">
+            <button type="button" onclick="cambiarStock(${p.id}, -1)" class="btn-step-minus" title="Restar 1">
+              <i class="ph-bold ph-minus"></i>
+            </button>
+
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <input 
+                type="number" 
+                value="${p.stock}" 
+                id="stock-input-grid-${p.id}"
+                onchange="actualizarStockDirecto(${p.id}, this.value)"
+                class="stock-input-giant ${esAgotado ? 'agotado' : ''}"
+              />
+              <span class="muted" style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">Porciones</span>
+            </div>
+
+            <button type="button" onclick="cambiarStock(${p.id}, 1)" class="btn-step-plus" title="Sumar 1">
+              <i class="ph-bold ph-plus"></i>
+            </button>
+          </div>
+
+          <!-- Atajos Rápidos -->
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
+            <button type="button" onclick="cambiarStock(${p.id}, 5)" class="btn-shortcut">+5</button>
+            <button type="button" onclick="cambiarStock(${p.id}, 10)" class="btn-shortcut">+10</button>
+            <button type="button" onclick="cambiarStock(${p.id}, 20)" class="btn-shortcut">+20</button>
+            <button type="button" onclick="fijarAgotado(${p.id})" class="btn-shortcut btn-shortcut-agotado" title="Agotar (fijar en 0)">
+              <i class="ph-bold ph-prohibit"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderTable(lista) {
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = lista.map(p => {
+      const esAgotado = p.stock === 0;
+      const esBajo = p.stock > 0 && p.stock <= p.minCritico;
+
+      let badgeStatus = `<span class="badge badge-ok">Listo</span>`;
+      if (esAgotado) {
+        badgeStatus = `<span class="badge badge-bad">Agotado</span>`;
+      } else if (esBajo) {
+        badgeStatus = `<span class="badge badge-warn">Crítico</span>`;
+      }
+
+      const imagenHtml = p.imagen 
+        ? `<img src="${p.imagen}" alt="${p.nombre}" style="width: 34px; height: 34px; border-radius: 8px; object-fit: cover;">`
+        : `<span style="font-size: 22px;">${p.emoji}</span>`;
+
+      return `
+        <tr>
+          <!-- Producto & Código -->
+          <td style="padding: 12px 16px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              ${imagenHtml}
+              <div>
+                <b style="color: var(--ink);">${p.nombre}</b>
+                <div class="muted" style="font-size: 12px;">${p.codigo} · S/ ${Number(p.precio).toFixed(2)}</div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Categoría -->
+          <td>
+            <span class="badge badge-info">${p.categoria}</span>
+          </td>
+
+          <!-- Nivel Visual -->
+          <td style="text-align: center;">
+            <b style="color: ${esAgotado ? 'var(--red)' : 'var(--ink)'}; font-size: 13px;">${p.stock} uds</b>
+            <div style="width: 80px; height: 5px; background: #e5ded4; border-radius: 999px; overflow: hidden; margin: 4px auto 0;">
+              <div style="height: 100%; width: ${Math.min(100, (p.stock / 25) * 100)}%; background: ${esAgotado ? 'var(--red)' : esBajo ? 'var(--amber)' : 'var(--green)'};"></div>
+            </div>
+          </td>
+
+          <!-- Ajuste Directo -->
+          <td style="text-align: center;">
+            <div style="display: inline-flex; align-items: center; border: 1.5px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff;">
+              <button type="button" onclick="cambiarStock(${p.id}, -1)" style="border: none; background: #faf4ed; padding: 6px 10px; cursor: pointer; color: var(--ink);">
+                <i class="ph-bold ph-minus" style="font-size: 11px;"></i>
+              </button>
+              <input 
+                type="number" 
+                value="${p.stock}" 
+                id="stock-input-tbl-${p.id}"
+                onchange="actualizarStockDirecto(${p.id}, this.value)"
+                style="width: 50px; text-align: center; border: none; font-weight: 800; font-size: 13px; outline: none; padding: 4px 0;"
+              />
+              <button type="button" onclick="cambiarStock(${p.id}, 1)" style="border: none; background: #faf4ed; padding: 6px 10px; cursor: pointer; color: var(--ink);">
+                <i class="ph-bold ph-plus" style="font-size: 11px;"></i>
+              </button>
+            </div>
+          </td>
+
+          <!-- Acciones Rápidas -->
+          <td style="text-align: center;">
+            <div style="display: inline-flex; gap: 4px;">
+              <button type="button" onclick="cambiarStock(${p.id}, 5)" class="btn btn-sm btn-soft" style="padding: 4px 8px; font-size: 11px;">+5</button>
+              <button type="button" onclick="cambiarStock(${p.id}, 10)" class="btn btn-sm btn-soft" style="padding: 4px 8px; font-size: 11px;">+10</button>
+              <button type="button" onclick="cambiarStock(${p.id}, 20)" class="btn btn-sm btn-soft" style="padding: 4px 8px; font-size: 11px;">+20</button>
+            </div>
+          </td>
+
+          <!-- Estado y Agotar -->
+          <td style="text-align: center;">
+            <div style="display: inline-flex; align-items: center; gap: 6px;">
+              ${badgeStatus}
+              <button type="button" onclick="fijarAgotado(${p.id})" title="Marcar agotado" style="border: none; background: transparent; color: #dc2626; cursor: pointer; padding: 4px; font-size: 16px;">
+                <i class="ph-bold ph-prohibit"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function cambiarStock(id, delta) {
+    const prod = productos.find(p => p.id === id);
+    if (!prod) return;
+
+    const anterior = prod.stock;
+    const nuevo = Math.max(0, prod.stock + delta);
+
+    // Actualización optimista
+    prod.stock = nuevo;
+    refrescarUIElemento(prod);
+    actualizarContadoresGlobales();
+
+    const params = new URLSearchParams();
+    params.append('idProducto', id);
+    params.append('delta', delta);
+
+    fetch('/stock/api/ajustar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        prod.stock = data.stockNuevo;
+        refrescarUIElemento(prod);
+        actualizarContadoresGlobales();
+        mostrarToast(data.mensaje, data.stockNuevo === 0 ? 'bad' : 'ok');
+      } else {
+        prod.stock = anterior;
+        refrescarUIElemento(prod);
+        actualizarContadoresGlobales();
+        mostrarToast(data.error || 'Error al actualizar', 'bad');
+      }
+    })
+    .catch(err => {
+      prod.stock = anterior;
+      refrescarUIElemento(prod);
+      actualizarContadoresGlobales();
+      mostrarToast('Error de conexión con el servidor', 'bad');
+    });
+  }
+
+  function actualizarStockDirecto(id, valor) {
+    const prod = productos.find(p => p.id === id);
+    if (!prod) return;
+
+    const num = parseInt(valor, 10);
+    const nuevoStock = isNaN(num) || num < 0 ? 0 : num;
+    const anterior = prod.stock;
+
+    prod.stock = nuevoStock;
+    refrescarUIElemento(prod);
+    actualizarContadoresGlobales();
+
+    const params = new URLSearchParams();
+    params.append('idProducto', id);
+    params.append('nuevoStock', nuevoStock);
+
+    fetch('/stock/api/fijar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        prod.stock = data.stockNuevo;
+        refrescarUIElemento(prod);
+        actualizarContadoresGlobales();
+        mostrarToast(data.mensaje, data.stockNuevo === 0 ? 'bad' : 'ok');
+      } else {
+        prod.stock = anterior;
+        refrescarUIElemento(prod);
+        actualizarContadoresGlobales();
+        mostrarToast(data.error || 'Error al fijar stock', 'bad');
+      }
+    })
+    .catch(err => {
+      prod.stock = anterior;
+      refrescarUIElemento(prod);
+      actualizarContadoresGlobales();
+      mostrarToast('Error de conexión', 'bad');
+    });
+  }
+
+  function fijarAgotado(id) {
+    actualizarStockDirecto(id, 0);
+  }
+
+  function refrescarUIElemento(prod) {
+    renderProductos();
+  }
+
+  function actualizarContadoresGlobales() {
+    const agotados = productos.filter(p => p.stock === 0).length;
+    const criticos = productos.filter(p => p.stock > 0 && p.stock <= p.minCritico).length;
+
+    document.getElementById('statAgotados').innerHTML = `<i class="ph-bold ph-x-circle"></i> ${agotados} Agotados`;
+    document.getElementById('statBajos').innerHTML = `<i class="ph-bold ph-warning"></i> ${criticos} Críticos`;
+  }
+
+  function seleccionarCategoria(catId) {
+    categoriaActual = catId;
+    renderCategorias();
+    renderProductos();
+  }
+
+  function filtrarProductos() {
+    renderProductos();
+  }
+
+  function cambiarVista(vista) {
+    vistaActual = vista;
+    const btnGrid = document.getElementById('btnViewGrid');
+    const btnTable = document.getElementById('btnViewTable');
+
+    if (vista === 'grid') {
+      btnGrid.style.background = 'var(--ink)';
+      btnGrid.style.color = '#ffffff';
+      btnTable.style.background = 'transparent';
+      btnTable.style.color = 'var(--muted)';
+    } else {
+      btnTable.style.background = 'var(--ink)';
+      btnTable.style.color = '#ffffff';
+      btnGrid.style.background = 'transparent';
+      btnGrid.style.color = 'var(--muted)';
+    }
+
+    renderProductos();
+  }
+
+  function abrirModalTurno() {
+    document.getElementById('modalTurno').style.display = 'flex';
+  }
+
+  function cerrarModalTurno() {
+    document.getElementById('modalTurno').style.display = 'none';
+  }
+
+  function aplicarBaseTurnoSeleccionado(cantidad) {
+    const sel = document.getElementById('modalCategoriaSelect');
+    const catNombre = sel ? sel.value : 'TODOS';
+    enviarAperturaTurno(catNombre, cantidad);
+  }
+
+  function aplicarBaseTurnoCustom() {
+    const input = document.getElementById('modalCustomStock');
+    const val = parseInt(input.value, 10);
+    if (isNaN(val) || val <= 0) {
+      mostrarToast('Ingresa una cantidad mayor a 0', 'bad');
+      return;
+    }
+    const sel = document.getElementById('modalCategoriaSelect');
+    const catNombre = sel ? sel.value : 'TODOS';
+    enviarAperturaTurno(catNombre, val);
+  }
+
+  function enviarAperturaTurno(categoriaNombre, cantidad) {
+    const params = new URLSearchParams();
+    params.append('categoriaNombre', categoriaNombre);
+    params.append('cantidadBase', cantidad);
+
+    fetch('/stock/api/apertura-turno', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        productos.forEach(p => {
+          const coincide = (categoriaNombre === 'TODOS' || p.categoria === categoriaNombre);
+          if (coincide && p.stock === 0) {
+            p.stock = cantidad;
+          }
+        });
+        cerrarModalTurno();
+        renderProductos();
+        actualizarContadoresGlobales();
+        mostrarToast(data.mensaje, 'ok');
+      } else {
+        mostrarToast(data.error || 'Error en apertura de turno', 'bad');
+      }
+    })
+    .catch(err => {
+      mostrarToast('Error de comunicación con el servidor', 'bad');
+    });
+  }
+
+  let toastTimer = null;
+  function mostrarToast(mensaje, tipo = 'ok') {
+    const toast = document.getElementById('toastNotification');
+    const msg = document.getElementById('toastMessage');
+    const icon = document.getElementById('toastIcon');
+
+    msg.innerText = mensaje;
+
+    if (tipo === 'bad') {
+      icon.style.color = '#f87171';
+      icon.innerHTML = '<i class="ph-bold ph-warning-circle"></i>';
+    } else {
+      icon.style.color = 'var(--amber)';
+      icon.innerHTML = '<i class="ph-bold ph-check-circle"></i>';
+    }
+
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.classList.remove('show');
+    }, 2500);
+  }
+
+  window.onload = init;
+  /*]]>*/
+</script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nuevo Pedido · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header">
+        <div>
+          <div class="eyebrow">Atención de Pedidos</div>
+          <h2>Registrar Comanda / Pedido</h2>
+          <p class="muted">Selecciona si es para atención en salón (mesa) o despacho delivery.</p>
+        </div>
+        <div>
+          <a class="btn btn-secondary" th:href="@{/pedidos}">← Volver a comandas</a>
+        </div>
+      </div>
+
+      <div class="card" style="max-width: 800px;">
+        <form th:action="@{/pedidos/create}" method="post">
+          <div class="form-grid">
+            <div class="full">
+              <label class="form-label">Tipo de Pedido *</label>
+              <select class="form-select" name="tipo" id="tipoPedidoSelect" onchange="toggleTipoPedido()" required>
+                <option value="SALON" selected>🍽 Salón (Mesa)</option>
+                <option value="DELIVERY">🛵 Delivery / Para Llevar</option>
+              </select>
+            </div>
+
+            <!-- Campos Salón -->
+            <div id="campoMesa" class="full">
+              <label class="form-label">Mesa *</label>
+              <select class="form-select" name="idMesa" id="selectMesa">
+                <option value="">-- Seleccionar mesa libre --</option>
+                <option th:each="m : ${mesas}" th:value="${m.idMesa}"
+                        th:selected="${idMesaSeleccionada != null and m.idMesa == idMesaSeleccionada}"
+                        th:text="'Mesa #' + ${m.numero} + ' (' + ${m.salon} + ' - Cap: ' + ${m.capacidad} + ')'"></option>
+              </select>
+            </div>
+
+            <div class="full">
+              <label class="form-label">Cliente (Opcional)</label>
+              <select class="form-select" name="idCliente">
+                <option value="">-- Cliente Casual / Anónimo --</option>
+                <option th:each="c : ${clientes}" th:value="${c.idCliente}" th:text="${c.nombre} + ' (' + ${c.telefono} + ')'"></option>
+              </select>
+            </div>
+
+            <!-- Campos Delivery -->
+            <div id="camposDelivery" style="display: none;" class="full form-grid">
+              <div class="full">
+                <label class="form-label">Dirección de Entrega</label>
+                <input class="form-control" name="direccion" placeholder="Av. Principal 123, Dpto 401">
+              </div>
+              <div>
+                <label class="form-label">Teléfono de Contacto</label>
+                <input class="form-control" name="telefono" placeholder="987654321">
+              </div>
+              <div>
+                <label class="form-label">Costo Delivery (S/)</label>
+                <input class="form-control" type="number" step="0.50" min="0" name="costoDelivery" value="0.00">
+              </div>
+              <div class="full">
+                <label class="form-label">Referencia</label>
+                <input class="form-control" name="referencia" placeholder="Frente al parque, portón verde">
+              </div>
+              <div class="full">
+                <label class="form-label">Repartidor Asignado</label>
+                <input class="form-control" name="repartidor" placeholder="Nombre o alias del repartidor">
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 24px; display: flex; gap: 10px;">
+            <button class="btn btn-primary" type="submit">Crear Pedido e Ir a Ítems</button>
+            <a class="btn btn-soft" th:href="@{/pedidos}">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+function toggleTipoPedido() {
+  const tipo = document.getElementById('tipoPedidoSelect').value;
+  const campoMesa = document.getElementById('campoMesa');
+  const camposDelivery = document.getElementById('camposDelivery');
+  const selectMesa = document.getElementById('selectMesa');
+
+  if (tipo === 'DELIVERY') {
+    campoMesa.style.display = 'none';
+    camposDelivery.style.display = 'grid';
+    selectMesa.removeAttribute('required');
+  } else {
+    campoMesa.style.display = 'block';
+    camposDelivery.style.display = 'none';
+    selectMesa.setAttribute('required', 'required');
+  }
+}
+toggleTipoPedido();
+</script>
+</body>
+</html>

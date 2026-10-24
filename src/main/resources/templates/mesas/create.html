@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nueva Mesa · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header">
+        <div>
+          <div class="eyebrow">Operación y Salón</div>
+          <h2>Registrar Nueva Mesa</h2>
+          <p class="muted">Agrega una mesa para la atención de clientes en el salón.</p>
+        </div>
+        <div>
+          <a class="btn btn-secondary" th:href="@{/mesas}">← Volver al listado</a>
+        </div>
+      </div>
+
+      <div class="card" style="max-width: 500px;">
+        <form th:action="@{/mesas/create}" th:object="${mesa}" method="post">
+          <div class="form-grid">
+            <div class="full">
+              <label class="form-label">Número de Mesa *</label>
+              <input class="form-control" type="number" min="1" th:field="*{numero}" placeholder="Ej: 10" required>
+              <span th:if="${#fields.hasErrors('numero')}" th:errors="*{numero}" style="color: #dc2626; font-size: 12px; font-weight: 700; margin-top: 4px; display: block;"></span>
+            </div>
+
+            <div class="full">
+              <label class="form-label">Salón o Área</label>
+              <input class="form-control" th:field="*{salon}" placeholder="Ej: Salón Principal, Terraza, Barra">
+              <span th:if="${#fields.hasErrors('salon')}" th:errors="*{salon}" style="color: #dc2626; font-size: 12px; font-weight: 700; margin-top: 4px; display: block;"></span>
+            </div>
+
+            <div class="full">
+              <label class="form-label">Capacidad (Personas) *</label>
+              <input class="form-control" type="number" min="1" max="30" th:field="*{capacidad}" value="4" required>
+              <span th:if="${#fields.hasErrors('capacidad')}" th:errors="*{capacidad}" style="color: #dc2626; font-size: 12px; font-weight: 700; margin-top: 4px; display: block;"></span>
+            </div>
+
+            <div class="full">
+              <label class="form-label">Estado Inicial</label>
+              <select class="form-select" th:field="*{estado}">
+                <option value="LIBRE">LIBRE</option>
+                <option value="BLOQUEADA">BLOQUEADA (Mantenimiento)</option>
+              </select>
+            </div>
+
+            <div class="full">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 6px;">
+                <input type="checkbox" th:field="*{activo}" checked>
+                <b>Mesa Activa</b>
+              </label>
+            </div>
+          </div>
+
+          <div style="margin-top: 24px; display: flex; gap: 10px;">
+            <button type="submit" class="btn btn-primary">Guardar Mesa</button>
+            <a class="btn btn-soft" th:href="@{/mesas}">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="'Ticket Precuenta ' + ${dto.codigo} + ' · El Chilpayate'"></title>
+  <style>
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 13px;
+      color: #000;
+      background: #f1f5f9;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .ticket-container {
+      width: 320px;
+      background: #ffffff;
+      padding: 20px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .ticket-header {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .ticket-title {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+    .ticket-divider {
+      border-top: 1px dashed #000;
+      margin: 10px 0;
+    }
+    .ticket-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .ticket-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0;
+    }
+    .ticket-table th {
+      border-bottom: 1px dashed #000;
+      text-align: left;
+      font-size: 11px;
+      padding: 4px 0;
+    }
+    .ticket-table td {
+      padding: 4px 0;
+    }
+    .ticket-total {
+      font-size: 16px;
+      font-weight: 900;
+    }
+    .actions {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      font-family: sans-serif;
+      font-size: 13px;
+      border: none;
+    }
+    .btn-print {
+      background: #2563eb;
+      color: #fff;
+    }
+    .btn-close {
+      background: #e2e8f0;
+      color: #1e293b;
+    }
+    @media print {
+      body {
+        background: #fff;
+        padding: 0;
+      }
+      .ticket-container {
+        border: none;
+        box-shadow: none;
+        width: 100%;
+        padding: 0;
+      }
+      .actions {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="ticket-container">
+  <div class="ticket-header">
+    <div class="ticket-title" th:text="${configuracion != null and configuracion.nombre != null ? configuracion.nombre.toUpperCase() : 'EL CHILPAYATE'}">EL CHILPAYATE</div>
+    <div>Restaurante de Alitas y Platos</div>
+    <div style="font-size: 11px; margin-top: 4px;">
+      <b>RUC: <span th:text="${configuracion != null and configuracion.ruc != null ? configuracion.ruc : '10876343874'}">10876343874</span></b>
+    </div>
+    <div style="font-size: 11px;" th:text="${configuracion != null ? configuracion.direccionCompleta : 'Carlos Wiesse 625, Santo Dominguito · Trujillo - La Libertad'}">
+      Carlos Wiesse 625, Santo Dominguito · Trujillo - La Libertad
+    </div>
+  </div>
+
+  <div class="ticket-divider"></div>
+
+  <div style="text-align: center; font-weight: 900; font-size: 15px; margin: 6px 0;">
+    *** PRECUENTA ***
+  </div>
+  <div style="text-align: center; font-size: 11px; color: #555;">(NO VÁLIDO COMO COMPROBANTE DE PAGO)</div>
+
+  <div class="ticket-divider"></div>
+
+  <div class="ticket-row">
+    <span><b>Mesa:</b></span>
+    <span th:text="${dto.numeroMesa > 0 ? 'Mesa #' + dto.numeroMesa : 'Delivery'}"></span>
+  </div>
+  <div class="ticket-row">
+    <span><b>Comanda:</b></span>
+    <span th:text="${precuenta != null ? precuenta.pedido.codigo : dto.codigo}"></span>
+  </div>
+  <div class="ticket-row">
+    <span><b>Cuenta:</b></span>
+    <span th:text="'Precuenta #' + ${dto.numeroPrecuenta}"></span>
+  </div>
+  <div class="ticket-row">
+    <span><b>Mozo:</b></span>
+    <span th:text="${dto.mozo}"></span>
+  </div>
+  <div class="ticket-row">
+    <span><b>Fecha:</b></span>
+    <span th:text="${dto.fechaEmision}"></span>
+  </div>
+
+  <div class="ticket-divider"></div>
+
+  <table class="ticket-table">
+    <thead>
+      <tr>
+        <th>CANT</th>
+        <th>DESCRIPCIÓN</th>
+        <th style="text-align: right;">TOTAL</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="it : ${dto.items}">
+        <td style="width: 30px;" th:text="${it.cantidad}"></td>
+        <td>
+          <div th:text="${it.producto}"></div>
+          <div th:if="${it.cremas != null and !it.cremas.isBlank()}" style="font-size: 10px; color: #555;" th:text="${it.cremas}"></div>
+          <div th:if="${it.nota != null and !it.nota.isBlank()}" style="font-size: 10px; color: #555;" th:text="${it.nota}"></div>
+        </td>
+        <td style="text-align: right;" th:text="'S/ ' + ${#numbers.formatDecimal(it.subtotal, 1, 2)}"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="ticket-divider"></div>
+
+  <div class="ticket-row">
+    <span>SUBTOTAL:</span>
+    <span th:text="'S/ ' + ${#numbers.formatDecimal(dto != null and dto.subtotal != null ? dto.subtotal : (precuenta != null and precuenta.subtotal != null ? precuenta.subtotal : 0.0), 1, 2)}"></span>
+  </div>
+  <div class="ticket-row">
+    <span>I.G.V. (18%):</span>
+    <span th:text="'S/ ' + ${#numbers.formatDecimal(dto != null and dto.igv != null ? dto.igv : (precuenta != null and precuenta.igv != null ? precuenta.igv : 0.0), 1, 2)}"></span>
+  </div>
+  <div class="ticket-row ticket-total" style="margin-top: 6px; font-size: 18px;">
+    <span>TOTAL:</span>
+    <span th:text="'S/ ' + ${#numbers.formatDecimal(dto != null and dto.total != null ? dto.total : (precuenta != null and precuenta.total != null ? precuenta.total : 0.0), 1, 2)}"></span>
+  </div>
+
+  <div class="ticket-divider"></div>
+
+  <div style="text-align: center; font-size: 11px; margin-top: 8px;">
+    ¡Gracias por su preferencia!<br>
+    Solicite su comprobante fiscal en Caja.
+  </div>
+</div>
+
+<div class="actions">
+  <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir Ticket</button>
+  <button class="btn btn-close" onclick="window.close()">✕ Cerrar</button>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cierre Diario de Caja · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header">
+        <div>
+          <div class="eyebrow">Arqueo y Tesorería</div>
+          <h2>Control y Cierre de Caja</h2>
+          <p class="muted">Apertura de turno, control de efectivo y arqueo diario.</p>
+        </div>
+        <div>
+          <a class="btn btn-secondary" th:href="@{/caja}">← Volver a Caja</a>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+        <!-- Si no hay caja abierta: Formulario de Apertura -->
+        <div class="card" th:if="${cajaAbierta == null}">
+          <h3 style="margin-bottom: 12px;">Apertura de Turno</h3>
+          <p class="muted" style="margin-bottom: 16px;">No hay un turno abierto actualmente. Ingresa el fondo de apertura para comenzar la jornada.</p>
+          <form th:action="@{/caja/abrir}" method="post">
+            <div class="form-grid">
+              <div class="full">
+                <label class="form-label">Monto de Apertura en Efectivo (S/) *</label>
+                <input class="form-control" type="number" step="0.50" min="0" name="montoApertura" value="100.00" required>
+              </div>
+            </div>
+            <div style="margin-top: 20px;">
+              <button class="btn btn-primary" style="width: 100%;" type="submit">Abrir Caja / Iniciar Turno</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Si hay caja abierta: Formulario de Cierre -->
+        <div class="card" th:if="${cajaAbierta != null}">
+          <h3 style="margin-bottom: 12px;">Turno en Curso</h3>
+          <p class="muted">Abierta el <b th:text="${#temporals.format(cajaAbierta.fechaApertura, 'dd/MM/yyyy HH:mm')}"></b> por <b th:text="${cajaAbierta.usuario != null ? cajaAbierta.usuario.nombres : 'Usuario'}"></b></p>
+          
+          <div style="margin: 16px 0; padding: 14px; background: #fffdf5; border: 1px solid #fed7aa; border-radius: 12px; font-size: 14px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+              <span>Fondo de Apertura:</span>
+              <b th:text="'S/ ' + ${#numbers.formatDecimal(cajaAbierta.montoApertura, 1, 2)}"></b>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;" th:if="${resumenTurno != null}">
+              <span style="color: #15803d;">💵 Ventas en Efectivo:</span>
+              <b style="color: #15803d;" th:text="'S/ ' + ${#numbers.formatDecimal(resumenTurno.ventasEfectivo, 1, 2)}"></b>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;" th:if="${resumenTurno != null}">
+              <span style="color: #0369a1;">📱 Ventas Digitales (Yape/Tarjetas):</span>
+              <b style="color: #0369a1;" th:text="'S/ ' + ${#numbers.formatDecimal(resumenTurno.ventasDigitales, 1, 2)}"></b>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;" th:if="${resumenTurno != null}">
+              <span class="muted">Total Ventas Turno:</span>
+              <span class="muted" th:text="'S/ ' + ${#numbers.formatDecimal(resumenTurno.totalVentas, 1, 2)} + ' (' + ${resumenTurno.cantidadVentas} + ' cobros)'"></span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 6px;">
+              <span style="color: #dc2626;">Gastos del Turno:</span>
+              <b style="color: #dc2626;" th:text="'- S/ ' + ${#numbers.formatDecimal(resumenTurno != null ? resumenTurno.totalGastos : totalGastosHoy, 1, 2)}"></b>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 800; color: #8d420d;">
+              <span>Efectivo Esperado en Gaveta:</span>
+              <span th:text="'S/ ' + ${#numbers.formatDecimal(resumenTurno != null ? resumenTurno.efectivoEsperado : (cajaAbierta.montoApertura - totalGastosHoy), 1, 2)}"></span>
+            </div>
+          </div>
+
+          <form th:action="@{/caja/cerrar}" method="post" onsubmit="return confirm('¿Está seguro de cerrar este turno de caja y conciliar el arqueo físico?');">
+            <input type="hidden" name="idCaja" th:value="${cajaAbierta.idCaja}">
+            <div class="form-grid">
+              <div class="full">
+                <label class="form-label">Efectivo Físico Contado en Gaveta (S/) *</label>
+                <input class="form-control" type="number" step="0.10" min="0" name="efectivoReal" placeholder="Ej: 350.00" required>
+                <small class="muted" style="margin-top: 4px; display: block;">Ingresa únicamente los billetes y monedas contados en caja.</small>
+              </div>
+            </div>
+            <div style="margin-top: 20px;">
+              <button class="btn btn-danger" style="width: 100%; font-size: 15px;" type="submit">🔒 Cerrar Turno y Realizar Arqueo</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Información -->
+        <div class="card">
+          <h3 style="margin-bottom: 12px;">Normas de Arqueo</h3>
+          <p class="muted" style="line-height: 1.6;">
+            1. Todo turno debe iniciarse con un fondo mínimo de sencillo para cambio.<br>
+            2. Las ventas cobradas con medios digitales (Yape, Tarjetas) se concilian directamente con el comprobante emitido.<br>
+            3. Al cierre, el sistema contrastará el efectivo físico reportado con el flujo neto esperado (Apertura + Ventas Efectivo - Gastos del Turno).
+          </p>
+        </div>
+      </div>
+
+      <!-- Historial de Cierres Anteriores -->
+      <div class="card">
+        <h3 style="margin-bottom: 16px;">Historial de Cierres Anteriores</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Responsable</th>
+                <th>Apertura</th>
+                <th>Cierre</th>
+                <th>Fondo Inicial</th>
+                <th>Ventas</th>
+                <th>Gastos</th>
+                <th>Diferencia</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="c : ${historialCierres}">
+                <td th:text="${c.idCaja}"></td>
+                <td><b th:text="${c.usuario != null ? c.usuario.nombres : '-'}"></b></td>
+                <td th:text="${#temporals.format(c.fechaApertura, 'dd/MM HH:mm')}"></td>
+                <td th:text="${c.fechaCierre != null ? #temporals.format(c.fechaCierre, 'dd/MM HH:mm') : 'En curso'}"></td>
+                <td th:text="'S/ ' + ${#numbers.formatDecimal(c.montoApertura, 1, 2)}"></td>
+                <td th:text="'S/ ' + ${#numbers.formatDecimal(c.totalVenta != null ? c.totalVenta : 0, 1, 2)}"></td>
+                <td style="color: #ef4444;" th:text="'S/ ' + ${#numbers.formatDecimal(c.totalGasto != null ? c.totalGasto : 0, 1, 2)}"></td>
+                <td>
+                  <span th:class="${c.diferencia != null and c.diferencia < 0 ? 'badge badge-bad' : 'badge badge-ok'}"
+                        th:text="'S/ ' + ${#numbers.formatDecimal(c.diferencia != null ? c.diferencia : 0, 1, 2)}"></span>
+                </td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(historialCierres)}">
+                <td colspan="8" class="muted" style="text-align: center; padding: 24px;">No hay historial de cierres registrado.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

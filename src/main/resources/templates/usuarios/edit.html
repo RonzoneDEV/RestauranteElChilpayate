@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Editar Usuario · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header">
+        <div>
+          <div class="eyebrow">Seguridad</div>
+          <h2 th:text="'Editar Usuario: ' + ${usuario.nombres + ' ' + (usuario.apellidos != null ? usuario.apellidos : '')}">Editar Usuario</h2>
+          <p class="muted">Actualiza los datos, rol o contraseña del colaborador.</p>
+        </div>
+        <div>
+          <a class="btn btn-secondary" th:href="@{/usuarios}">← Volver al listado</a>
+        </div>
+      </div>
+
+      <div class="card" style="max-width: 700px;">
+        <form th:action="@{'/usuarios/edit/' + ${usuario.idUsuario}}" th:object="${usuario}" method="post">
+          <input type="hidden" th:field="*{idUsuario}">
+
+          <div class="form-grid">
+            <div>
+              <label class="form-label">Nombres *</label>
+              <input class="form-control" th:field="*{nombres}" required>
+            </div>
+
+            <div>
+              <label class="form-label">Apellidos *</label>
+              <input class="form-control" th:field="*{apellidos}" required>
+            </div>
+
+            <div class="full">
+              <label class="form-label">Nombre de usuario (Login) *</label>
+              <input class="form-control" th:field="*{username}" required>
+            </div>
+
+            <div class="full">
+              <label class="form-label">Nueva Contraseña (dejar en blanco para conservar la actual)</label>
+              <input class="form-control" type="password" th:field="*{password}" placeholder="Dejar vacío si no deseas cambiarla">
+            </div>
+
+            <div>
+              <label class="form-label">Rol del sistema *</label>
+              <select class="form-select" th:field="*{rol.idRol}" required>
+                <option th:each="r : ${roles}" th:value="${r.idRol}" th:text="${r.nombre}"
+                        th:selected="${usuario.rol != null and usuario.rol.idRol == r.idRol}"></option>
+              </select>
+            </div>
+
+            <div style="display: flex; align-items: flex-end;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding-bottom: 12px;">
+                <input type="checkbox" th:field="*{estado}">
+                <b>Usuario Activo</b>
+              </label>
+            </div>
+          </div>
+
+          <div class="actions" style="margin-top: 20px;">
+            <button type="submit" class="btn btn-primary">Actualizar usuario</button>
+            <a class="btn btn-secondary" th:href="@{/usuarios}">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

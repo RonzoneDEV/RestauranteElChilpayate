@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Comandas y Pedidos · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header">
+        <div>
+          <div class="eyebrow">Operación y Cocina</div>
+          <h2>Comandas y Pedidos</h2>
+          <p class="muted">Gestión de órdenes en salón y delivery.</p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <a class="btn btn-primary" th:href="@{/salon}">▦ Ir al Salón</a>
+          <a class="btn btn-soft" th:href="@{/delivery/create}">🛵 Nuevo Delivery</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Fecha / Hora</th>
+                <th>Tipo</th>
+                <th>Mesa / Destino</th>
+                <th>Mozo / Usuario</th>
+                <th>Ítems</th>
+                <th>Estado</th>
+                <th style="text-align: right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="p : ${pedidos}">
+                <td>
+                  <b th:text="${p.codigo != null ? p.codigo : ('#' + p.idPedido)}"></b>
+                </td>
+                <td th:text="${#temporals.format(p.fecha, 'dd/MM HH:mm')}"></td>
+                <td>
+                  <span th:class="${p.tipo.name() == 'SALON' ? 'badge badge-ok' : 'badge badge-info'}"
+                        th:text="${p.tipo}"></span>
+                </td>
+                <td>
+                  <span th:if="${p.mesa != null}"><b th:text="'Mesa #' + ${p.mesa.numero}"></b></span>
+                  <span th:if="${p.pedidoDelivery != null}" th:text="${p.pedidoDelivery.direccion}"></span>
+                  <div th:if="${p.cliente != null}" class="muted" style="font-size: 12px;" th:text="${p.cliente.nombre}"></div>
+                </td>
+                <td>
+                  <small th:text="${p.usuario != null ? p.usuario.nombres : '-'}"></small>
+                </td>
+                <td>
+                  <span class="badge badge-info" th:text="${p.detallePedido != null ? #lists.size(p.detallePedido) + ' ítems' : '0 ítems'}"></span>
+                </td>
+                <td>
+                  <span th:class="${p.estado.name() == 'PAGADA' ? 'badge badge-ok' : (p.estado.name() == 'ACTIVA' ? 'badge-ok' : (p.estado.name() == 'PRECUENTA' ? 'badge-warning' : (p.estado.name() == 'ANULADA' ? 'badge-bad' : 'badge-info')))}"
+                        th:text="${p.estado}"></span>
+                </td>
+                <td class="actions" style="justify-content: flex-end;">
+                  <a class="btn btn-soft btn-sm" th:href="@{'/pedidos/edit/' + ${p.idPedido}}">Ver / Editar</a>
+                  <a class="btn btn-primary btn-sm" th:if="${p.estado.name() != 'PAGADA' and p.estado.name() != 'ANULADA'}" th:href="@{'/caja/pago/' + ${p.idPedido}}">Cobrar</a>
+                </td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(pedidos)}">
+                <td colspan="8" class="muted" style="text-align: center; padding: 30px;">No hay pedidos activos actualmente.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

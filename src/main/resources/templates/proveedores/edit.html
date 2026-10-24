@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Editar Proveedor · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header">
+        <div>
+          <div class="eyebrow">Directorio</div>
+          <h2>Editar Proveedor #<span th:text="${proveedor.idProveedor}"></span></h2>
+          <p class="muted">Actualiza los datos de la empresa proveedora.</p>
+        </div>
+        <div>
+          <a class="btn btn-secondary" th:href="@{/proveedores}">← Volver al listado</a>
+        </div>
+      </div>
+
+      <div class="card" style="max-width: 600px;">
+        <form th:action="@{/proveedores/edit/{id}(id=${proveedor.idProveedor})}" th:object="${proveedor}" method="post">
+          <div class="form-grid">
+            <div class="full">
+              <label class="form-label">Razón Social *</label>
+              <input class="form-control" th:field="*{razonSocial}" required>
+            </div>
+
+            <div>
+              <label class="form-label">RUC</label>
+              <input class="form-control" th:field="*{ruc}" maxlength="11">
+            </div>
+
+            <div>
+              <label class="form-label">Teléfono</label>
+              <input class="form-control" th:field="*{telefono}">
+            </div>
+
+            <div class="full">
+              <label class="form-label">Dirección fiscal</label>
+              <input class="form-control" th:field="*{direccion}">
+            </div>
+
+            <div class="full">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 6px;">
+                <input type="checkbox" th:field="*{estado}">
+                <b>Proveedor Activo</b>
+              </label>
+            </div>
+          </div>
+
+          <div style="margin-top: 24px; display: flex; gap: 10px;">
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            <a class="btn btn-soft" th:href="@{/proveedores}">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

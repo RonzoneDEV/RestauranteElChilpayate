@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+<aside th:fragment="sidebar" th:replace="~{fragments/menu :: menu}"></aside>
+<header th:fragment="topbar" th:replace="~{fragments/menu :: topbar}"></header>
+<div th:fragment="alerts" th:replace="~{fragments/menu :: alerts}"></div>
+</body>
+</html>

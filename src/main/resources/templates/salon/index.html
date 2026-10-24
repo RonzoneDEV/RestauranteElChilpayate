@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Salón · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css(v='3.2')}">
+  <style>
+    .mesa-card {
+      border-radius: 20px;
+      padding: 18px 20px;
+      background: #ffffff;
+      border: 2px solid var(--line);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      min-height: 210px;
+    }
+    .mesa-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 36px rgba(70,42,16,.14);
+    }
+    .mesa-card:active {
+      transform: scale(0.985);
+    }
+    .mesa-card.libre {
+      border-color: #86efac;
+      background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 60%);
+    }
+    .mesa-card.ocupada {
+      border-color: #fca5a5;
+      background: linear-gradient(180deg, #fef2f2 0%, #ffffff 60%);
+    }
+    .mesa-card.bloqueada {
+      border-color: #f59e0b;
+      background: linear-gradient(180deg, #fffbeb 0%, #ffffff 60%);
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15);
+    }
+
+    /* Grilla de mesas responsiva */
+    .mesas-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 14px;
+    }
+
+    /* Chips de filtro rápido de salón */
+    .salon-filter-chips {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 6px;
+      margin-top: 12px;
+      scrollbar-width: none;
+    }
+    .salon-filter-chips::-webkit-scrollbar {
+      display: none;
+    }
+    .salon-filter-chip {
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #475569;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.18s ease;
+      min-height: 38px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .salon-filter-chip.active {
+      background: #2b1d14;
+      color: #ffffff;
+      border-color: #2b1d14;
+      box-shadow: 0 4px 12px rgba(43, 29, 20, 0.25);
+    }
+
+    /* Reglas para Celular (<640px) y Tablet (641px - 1000px) */
+    @media (max-width: 768px) {
+      .salon-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 14px !important;
+      }
+      .salon-header-actions {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        width: 100% !important;
+      }
+      .salon-header-actions .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        min-height: 44px !important;
+        font-size: 13px !important;
+        padding: 10px 8px !important;
+      }
+      .salon-kpi-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+      }
+      .salon-kpi-grid .card.metric {
+        padding: 12px 14px !important;
+      }
+      .salon-kpi-grid .metric .value {
+        font-size: 22px !important;
+      }
+      .salon-kpi-grid .metric .bubble {
+        width: 38px !important;
+        height: 38px !important;
+        font-size: 18px !important;
+      }
+      .mesas-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+      }
+      .mesa-card {
+        padding: 16px !important;
+        min-height: auto !important;
+        border-radius: 16px !important;
+      }
+      .mesa-card .btn {
+        min-height: 44px !important;
+        font-size: 14px !important;
+      }
+      .salon-legend {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+      }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .mesas-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 14px !important;
+      }
+      .salon-kpi-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 12px !important;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header salon-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+        <div>
+          <div class="eyebrow">Operación de Salón</div>
+          <h1 class="page-title">Plano del Salón y Mesas</h1>
+          <p class="muted" style="margin: 0;">Gestión táctil en tiempo real para atención de mesas y pedidos.</p>
+        </div>
+        <div class="salon-header-actions" style="display: flex; gap: 10px;">
+          <a class="btn btn-primary" th:href="@{/delivery/create}">🛵 Pedido Delivery</a>
+          <a class="btn btn-soft" th:href="@{/caja/terminal}">🖥 Terminal de Caja</a>
+        </div>
+      </div>
+
+      <!-- Resumen de Ocupación Responsivo -->
+      <div class="grid grid-4 salon-kpi-grid" style="margin-bottom: 20px;">
+        <div class="card metric">
+          <div>
+            <div class="label">Total Mesas</div>
+            <div class="value" th:text="${totalMesas}">0</div>
+          </div>
+          <div class="bubble">▦</div>
+        </div>
+        <div class="card metric">
+          <div>
+            <div class="label">Mesas Libres</div>
+            <div class="value positive" th:text="${libres}">0</div>
+          </div>
+          <div class="bubble">🟢</div>
+        </div>
+        <div class="card metric">
+          <div>
+            <div class="label">Mesas Ocupadas</div>
+            <div class="value negative" th:text="${ocupadas}">0</div>
+          </div>
+          <div class="bubble">🔴</div>
+        </div>
+        <div class="card metric">
+          <div>
+            <div class="label">En Cobro</div>
+            <div class="value" style="color: #d97706;" th:text="${bloqueadas != null ? bloqueadas : 0}">0</div>
+          </div>
+          <div class="bubble">🔒</div>
+        </div>
+      </div>
+
+      <!-- Cuadrícula de Mesas del Salón -->
+      <div class="card" style="padding: 18px 20px;">
+        <div class="section-head" style="flex-wrap: wrap; gap: 12px; margin-bottom: 10px;">
+          <div>
+            <h3 style="margin: 0; font-size: 18px;">Salón Principal</h3>
+            <small class="muted">Toca una mesa para tomar pedido o revisar el consumo</small>
+          </div>
+          <div class="salon-legend" style="display: flex; gap: 10px; font-size: 13px;">
+            <span><span class="badge badge-ok">● Libre</span> Disponible</span>
+            <span><span class="badge badge-bad">● Ocupada</span> Con Pedido</span>
+            <span><span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #f59e0b;">🔒 Bloqueada</span> En Cobro</span>
+          </div>
+        </div>
+
+        <!-- Filtros Rápidos de Mesas para el Mozo -->
+        <div class="salon-filter-chips">
+          <button type="button" class="salon-filter-chip active" onclick="filtrarMesas('TODAS', this)">
+            📋 Todas (<span th:text="${totalMesas}">0</span>)
+          </button>
+          <button type="button" class="salon-filter-chip" onclick="filtrarMesas('LIBRE', this)">
+            🟢 Libres (<span th:text="${libres}">0</span>)
+          </button>
+          <button type="button" class="salon-filter-chip" onclick="filtrarMesas('OCUPADA', this)">
+            🔴 Ocupadas (<span th:text="${ocupadas}">0</span>)
+          </button>
+          <button type="button" class="salon-filter-chip" th:if="${bloqueadas != null and bloqueadas > 0}" onclick="filtrarMesas('BLOQUEADA', this)">
+            🔒 En Cobro (<span th:text="${bloqueadas}">0</span>)
+          </button>
+        </div>
+
+        <div class="mesas-grid">
+          <div th:each="m : ${mesas}"
+               th:with="tienePedido=${pedidosPorMesa != null and pedidosPorMesa.containsKey(m.idMesa)},
+                        pedidoAct=${tienePedido ? pedidosPorMesa.get(m.idMesa) : null},
+                        tieneCarrito=${carritosPorMesa != null and carritosPorMesa.containsKey(m.idMesa) and !carritosPorMesa.get(m.idMesa).estaVacio()},
+                        carritoMesa=${tieneCarrito ? carritosPorMesa.get(m.idMesa) : null},
+                        estaBloqueada=${m.estado != null and m.estado.name() == 'BLOQUEADA'},
+                        estadoStr=${m.estado != null ? m.estado.name() : 'LIBRE'}"
+               th:class="${'mesa-card ' + (estadoStr == 'LIBRE' ? 'libre' : (estadoStr == 'OCUPADA' ? 'ocupada' : 'bloqueada'))}"
+               th:data-estado="${estadoStr}"
+               th:data-url="@{'/pedidos/mesa/' + ${m.idMesa}}"
+               onclick="if(!this.classList.contains('bloqueada')) { window.location.href = this.dataset.url; }"
+               th:style="${estaBloqueada ? 'cursor: not-allowed;' : 'cursor: pointer;'}">
+            
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <b style="font-size: 22px;" th:text="'Mesa ' + ${m.numero}"></b>
+                <span th:if="${m.estado != null and m.estado.name() == 'LIBRE'}" class="badge badge-ok">LIBRE</span>
+                <span th:if="${m.estado != null and m.estado.name() == 'OCUPADA'}" class="badge badge-bad">OCUPADA</span>
+                <span th:if="${estaBloqueada}" class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #f59e0b; font-weight: 800;">🔒 BLOQUEADA</span>
+              </div>
+              <div class="muted" style="font-size: 13px; margin-bottom: 10px;">
+                👤 Capacidad: <b th:text="${m.capacidad} + ' personas'"></b>
+              </div>
+
+              <!-- Indicador si hay platos en el Carrito de sesión pendientes -->
+              <div th:if="${tieneCarrito and not estaBloqueada}"
+                   style="background: #fffbeb; border: 1px dashed #f59e0b; padding: 8px 12px; border-radius: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+                <span style="color: #92400e; font-weight: 700;">🛒 Carrito sin confirmar:</span>
+                <b style="color: #b45309;" th:text="${carritoMesa.cantidadTotal} + ' platos (S/ ' + ${carritoMesa.total != null ? #numbers.formatDecimal(carritoMesa.total, 1, 2) : '0.00'} + ')'"></b>
+              </div>
+
+              <!-- Si la mesa está BLOQUEADA por precuenta en cobro -->
+              <div th:if="${estaBloqueada}"
+                   style="background: #fffbeb; padding: 12px; border-radius: 12px; border: 1px solid #fde68a; margin-bottom: 14px;">
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; color: #92400e;">
+                  <span>🔒 Precuenta en Cobro</span>
+                </div>
+                <div style="font-size: 12px; color: #78350f; margin-top: 4px;">
+                  Comanda: <b th:text="${tienePedido and pedidoAct != null ? pedidoAct.codigo : ''}"></b> · Consumo: <b th:text="${tienePedido and pedidoAct != null and pedidoAct.total != null ? ('S/ ' + #numbers.formatDecimal(pedidoAct.total, 1, 2)) : 'S/ 0.00'}"></b>
+                </div>
+                <div style="font-size: 11px; color: #b45309; margin-top: 4px; line-height: 1.3;">
+                  Acceso restringido: No se permite ingresar más productos hasta cancelar en Caja.
+                </div>
+              </div>
+
+              <!-- Si la mesa está ocupada, mostrar datos de la orden -->
+              <div th:if="${m.estado != null and m.estado.name() == 'OCUPADA' and tienePedido and pedidoAct != null}"
+                   style="background: rgba(239,68,68,0.06); padding: 10px 12px; border-radius: 12px; border: 1px dashed #fca5a5; margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                  <span>Comanda:</span>
+                  <b th:text="${pedidoAct.codigo != null ? pedidoAct.codigo : ('#' + pedidoAct.idPedido)}"></b>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 14px; margin-top: 4px;">
+                  <span>Consumo:</span>
+                  <b style="color: var(--brown); font-size: 16px;" th:text="'S/ ' + ${pedidoAct.total != null ? #numbers.formatDecimal(pedidoAct.total, 1, 2) : '0.00'}"></b>
+                </div>
+                <div th:if="${pedidoAct.usuario != null}" class="muted" style="font-size: 11px; margin-top: 4px;">
+                  Mozo: <span th:text="${pedidoAct.usuario.nombres}"></span>
+                </div>
+                <div th:if="${pedidoAct.estado != null and pedidoAct.estado.name() == 'PRECUENTA'}" style="margin-top: 4px;">
+                  <span class="badge badge-warn" style="font-size: 11px;">🧾 Precuenta Solicitada</span>
+                </div>
+              </div>
+
+              <!-- Si la mesa está ocupada sin comanda confirmada en BD (en toma de orden) -->
+              <div th:if="${m.estado != null and m.estado.name() == 'OCUPADA' and (not tienePedido or pedidoAct == null)}"
+                   style="background: rgba(245,158,11,0.08); padding: 10px 12px; border-radius: 12px; border: 1px dashed #f59e0b; margin-bottom: 14px;">
+                <div style="font-size: 13px; font-weight: 700; color: #b45309;">
+                  ⏱ En Toma de Orden
+                </div>
+                <div class="muted" style="font-size: 11px; margin-top: 3px;">
+                  Mesa ocupada en atención actual.
+                </div>
+              </div>
+
+              <div th:if="${m.estado != null and m.estado.name() == 'LIBRE' and !tieneCarrito}"
+                   style="padding: 12px; text-align: center; color: #15803d; font-size: 13px; font-weight: 600; margin-bottom: 14px; background: rgba(34,197,94,0.06); border-radius: 12px;">
+                ✨ Mesa disponible · Toca para tomar pedido
+              </div>
+            </div>
+
+            <!-- Botones de Acción Táctiles (mínimo 44px de altura) -->
+            <div style="display: flex; gap: 8px;" onclick="event.stopPropagation();">
+              <!-- Mesa BLOQUEADA por precuenta -->
+              <a th:if="${estaBloqueada}"
+                 class="btn btn-soft btn-sm" style="width: 100%; font-weight: 800; background: #eff6ff; color: #1d4ed8; border: 1px solid #93c5fd; text-align: center; min-height: 44px;"
+                 th:href="@{/caja/terminal}">
+                🖥 Ir a Caja a Cobrar
+              </a>
+
+              <!-- Mesa libre sin carrito -->
+              <a th:if="${m.estado != null and m.estado.name() == 'LIBRE' and !tieneCarrito}"
+                 class="btn btn-primary" style="width: 100%; min-height: 44px;"
+                 th:href="@{'/pedidos/mesa/' + ${m.idMesa}}">
+                🍽 Tomar Pedido
+              </a>
+
+              <!-- Mesa libre con carrito pendiente -->
+              <a th:if="${m.estado != null and m.estado.name() == 'LIBRE' and tieneCarrito}"
+                 class="btn btn-primary btn-sm" style="flex: 1; min-height: 44px;"
+                 th:href="@{'/pedidos/mesa/' + ${m.idMesa}}">
+                🍽 Catálogo
+              </a>
+              <a th:if="${m.estado != null and m.estado.name() == 'LIBRE' and tieneCarrito}"
+                 class="btn btn-soft btn-sm" style="flex: 1; font-weight: 800; background: #fef3c7; color: #92400e; border: 1px solid #fde68a; min-height: 44px;"
+                 th:href="@{'/pedidos/mesa/' + ${m.idMesa} + '/carrito'}">
+                🛒 Ver Carrito
+              </a>
+
+              <!-- Mesa ocupada con pedido activo confirmado -->
+              <a th:if="${m.estado != null and m.estado.name() == 'OCUPADA' and tienePedido and pedidoAct != null}"
+                 class="btn btn-primary btn-sm" style="flex: 1; min-height: 44px;"
+                 th:href="@{'/pedidos/mesa/' + ${m.idMesa}}">
+                + Platos
+              </a>
+              <a th:if="${m.estado != null and m.estado.name() == 'OCUPADA' and tienePedido and pedidoAct != null}"
+                 class="btn btn-soft btn-sm" style="flex: 1; font-weight: 700; min-height: 44px;"
+                 th:href="@{'/pedidos/mesa/' + ${m.idMesa} + '/carrito'}">
+                🛒 Comanda
+              </a>
+
+              <!-- Mesa ocupada en atención (sin pedido confirmado en BD) -->
+              <a th:if="${m.estado != null and m.estado.name() == 'OCUPADA' and (not tienePedido or pedidoAct == null)}"
+                 class="btn btn-primary btn-sm" style="flex: 1; min-height: 44px;"
+                 th:href="@{'/pedidos/mesa/' + ${m.idMesa}}">
+                🍽 Continuar
+              </a>
+              <a th:if="${m.estado != null and m.estado.name() == 'OCUPADA' and (not tienePedido or pedidoAct == null)}"
+                 class="btn btn-secondary btn-sm" style="flex: 1; color: #dc2626; border-color: #fca5a5; min-height: 44px;"
+                 th:href="@{'/salon/liberar/' + ${m.idMesa}}"
+                 title="Liberar mesa si no se completó la atención">
+                🔓 Liberar
+              </a>
+            </div>
+
+          </div>
+        </div>
+
+        <div th:if="${#lists.isEmpty(mesas)}" class="muted" style="text-align: center; padding: 40px;">
+          No hay mesas registradas en el salón. Vaya a <b>Mantenedores > Mesas</b> para crearlas.
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  function filtrarMesas(estado, btn) {
+    document.querySelectorAll('.salon-filter-chip').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    document.querySelectorAll('.mesa-card').forEach(card => {
+      if (estado === 'TODAS' || card.dataset.estado === estado) {
+        card.style.display = 'flex';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+</script>
+</body>
+</html>

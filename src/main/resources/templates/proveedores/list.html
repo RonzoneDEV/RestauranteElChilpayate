@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Proveedores · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header">
+        <div>
+          <div class="eyebrow">Directorio</div>
+          <h2>Proveedores de Insumos</h2>
+          <p class="muted">Contactos y empresas proveedoras de alitas, empaques, salsas y bebidas.</p>
+        </div>
+        <div>
+          <a class="btn btn-primary" th:href="@{/proveedores/create}">+ Nuevo Proveedor</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Razón Social</th>
+                <th>RUC</th>
+                <th>Teléfono</th>
+                <th>Dirección</th>
+                <th>Estado</th>
+                <th style="text-align: right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="p : ${proveedores}">
+                <td th:text="${p.idProveedor}"></td>
+                <td><b th:text="${p.razonSocial}"></b></td>
+                <td th:text="${p.ruc != null and !p.ruc.isBlank() ? p.ruc : '-'}"></td>
+                <td th:text="${p.telefono != null and !p.telefono.isBlank() ? p.telefono : '-'}"></td>
+                <td th:text="${p.direccion != null and !p.direccion.isBlank() ? p.direccion : '-'}"></td>
+                <td>
+                  <span th:class="${'badge ' + (p.estado ? 'badge-ok' : 'badge-bad')}"
+                        th:text="${p.estado ? 'ACTIVO' : 'INACTIVO'}"></span>
+                </td>
+                <td class="actions" style="justify-content: flex-end;">
+                  <a class="btn btn-soft btn-sm" th:href="@{'/proveedores/edit/' + ${p.idProveedor}}">Editar</a>
+                  <a class="btn btn-sm" th:classappend="${p.estado ? 'btn-danger' : 'btn-secondary'}"
+                     th:href="@{'/proveedores/delete/' + ${p.idProveedor}}"
+                     th:text="${p.estado ? 'Desactivar' : 'Activar'}"
+                     onclick="return confirm('¿Desea cambiar el estado de este proveedor?');"></a>
+                </td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(proveedores)}">
+                <td colspan="7" class="muted" style="text-align: center; padding: 25px;">No hay proveedores registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

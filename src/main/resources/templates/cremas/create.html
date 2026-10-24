@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nueva Crema · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header">
+        <div>
+          <div class="eyebrow">Acompañamientos</div>
+          <h2>Nueva Crema</h2>
+          <p class="muted">Registra una crema de cortesía para los pedidos.</p>
+        </div>
+        <div>
+          <a class="btn btn-secondary" th:href="@{/cremas}">← Volver al listado</a>
+        </div>
+      </div>
+
+      <div class="card" style="max-width: 600px;">
+        <form th:action="@{/cremas/create}" th:object="${crema}" method="post">
+          <div class="form-grid">
+            <div class="full">
+              <label class="form-label">Nombre de la Crema *</label>
+              <input class="form-control" th:field="*{nombre}" placeholder="Ej: Mayonesa, Tártara, Ají Parrillero" required>
+            </div>
+
+            <div class="full">
+              <label style="display: flex; align-items: center; gap: 8px; margin-top: 6px; cursor: pointer;">
+                <input type="checkbox" th:field="*{estado}" checked>
+                <b>Crema Activa</b>
+              </label>
+            </div>
+          </div>
+
+          <div style="margin-top: 24px; display: flex; gap: 10px;">
+            <button class="btn btn-primary" type="submit">Guardar Crema</button>
+            <a class="btn btn-soft" th:href="@{/cremas}">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

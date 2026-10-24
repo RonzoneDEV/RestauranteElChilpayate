@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gastos · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header">
+        <div>
+          <div class="eyebrow">Administración y Egresos</div>
+          <h2>Gastos Operativos</h2>
+          <p class="muted">Registra y controla compras de insumos, servicios y otros egresos del restaurante.</p>
+        </div>
+        <div>
+          <a class="btn btn-primary" th:href="@{/gastos/create}">+ Registrar Gasto</a>
+        </div>
+      </div>
+
+      <!-- Filtro por fechas -->
+      <form method="get" th:action="@{/gastos}" class="card" style="margin-bottom: 20px; display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+        <div>
+          <label class="form-label">Desde</label>
+          <input class="form-control" type="date" name="desde" th:value="${desde}">
+        </div>
+        <div>
+          <label class="form-label">Hasta</label>
+          <input class="form-control" type="date" name="hasta" th:value="${hasta}">
+        </div>
+        <div>
+          <button class="btn btn-secondary">Filtrar período</button>
+          <a class="btn btn-secondary" th:href="@{/gastos}">Restablecer</a>
+        </div>
+      </form>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Fecha</th>
+                <th>Concepto</th>
+                <th>Proveedor</th>
+                <th>Monto</th>
+                <th style="text-align: right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="g : ${gastos}">
+                <td th:text="${g.idGasto}"></td>
+                <td th:text="${#temporals.format(g.fecha, 'dd/MM/yyyy')}"></td>
+                <td>
+                  <b th:text="${g.concepto}"></b>
+                  <div class="muted" style="font-size: 12px;" th:if="${g.observacion != null and !g.observacion.isBlank()}" th:text="${g.observacion}"></div>
+                </td>
+                <td th:text="${g.proveedor != null ? g.proveedor.razonSocial : '-'}"></td>
+                <td style="font-weight: 800; color: #dc2626;" th:text="'S/ ' + ${#numbers.formatDecimal(g.monto, 1, 2)}"></td>
+                <td class="actions" style="justify-content: flex-end;">
+                  <a class="btn btn-soft btn-sm" th:href="@{'/gastos/edit/' + ${g.idGasto}}">Editar</a>
+                  <a class="btn btn-danger btn-sm" th:href="@{'/gastos/delete/' + ${g.idGasto}}"
+                     onclick="return confirm('¿Seguro que deseas eliminar este registro de gasto?');">Eliminar</a>
+                </td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(gastos)}">
+                <td colspan="6" class="muted" style="text-align: center; padding: 25px;">No hay gastos registrados en el período seleccionado.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

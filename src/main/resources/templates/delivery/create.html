@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Carta Delivery · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css(v='3.2')}">
+  <style>
+    :root {
+      --del-primary: #7c3aed;
+      --del-primary-hover: #6d28d9;
+      --del-primary-light: #ede9fe;
+      --del-accent: #f59e0b;
+      --del-dark: #1e293b;
+      --del-border: #e2e8f0;
+      --del-card-bg: #ffffff;
+    }
+
+    /* Barra Superior del Catálogo Delivery */
+    .delivery-topbar-strip {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px 22px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 16px rgba(124, 58, 237, 0.05);
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .btn-cart-nav {
+      background: linear-gradient(135deg, #7c3aed, #5b21b6);
+      color: #ffffff !important;
+      font-weight: 800;
+      font-size: 15px;
+      padding: 12px 22px;
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+    .btn-cart-nav:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(124, 58, 237, 0.45);
+    }
+    .cart-badge-count {
+      background: #ffffff;
+      color: #6d28d9;
+      font-weight: 900;
+      font-size: 13px;
+      padding: 2px 9px;
+      border-radius: 999px;
+    }
+
+    /* Chips de Categorías con Barra de Desplazamiento Visible y Accesible */
+    .category-chips-bar {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 18px;
+      width: 100%;
+    }
+    .category-chips {
+      flex: 1;
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 4px 2px 10px 2px;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+      scrollbar-color: var(--del-primary) #f1f5f9;
+    }
+    .category-chips::-webkit-scrollbar {
+      height: 8px;
+      display: block;
+    }
+    .category-chips::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 999px;
+    }
+    .category-chips::-webkit-scrollbar-thumb {
+      background: var(--del-primary);
+      border-radius: 999px;
+      border: 1.5px solid #f1f5f9;
+      transition: background 0.2s ease;
+    }
+    .category-chips::-webkit-scrollbar-thumb:hover {
+      background: var(--del-primary-hover);
+    }
+    .cat-nav-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 11px;
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      color: var(--del-primary);
+      font-size: 20px;
+      font-weight: 900;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      transition: all 0.15s ease;
+      user-select: none;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .cat-nav-btn:hover {
+      background: var(--del-primary-light);
+      border-color: var(--del-primary);
+      color: var(--del-primary-hover);
+      transform: scale(1.06);
+    }
+    .cat-nav-btn:active {
+      transform: scale(0.94);
+    }
+    .cat-chip {
+      padding: 9px 18px;
+      border-radius: 999px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      color: #475569;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+    }
+    .cat-chip:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+    .cat-chip.active {
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      color: #ffffff;
+      border-color: #6d28d9;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+    }
+
+    /* Buscador en Vivo */
+    .search-box-wrap {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .search-box-wrap input {
+      width: 100%;
+      padding: 13px 20px 13px 44px;
+      border-radius: 14px;
+      border: 1px solid #cbd5e1;
+      font-size: 15px;
+      background: #ffffff;
+      outline: none;
+      transition: border 0.2s, box-shadow 0.2s;
+    }
+    .search-box-wrap input:focus {
+      border-color: #7c3aed;
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
+    }
+    .search-box-wrap .search-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 18px;
+      color: #94a3b8;
+    }
+
+    /* Catálogo de Productos a Cuadrícula Completa */
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 18px;
+    }
+
+    .prod-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      position: relative;
+    }
+    .prod-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(124, 58, 237, 0.12);
+      border-color: #c4b5fd;
+    }
+    .prod-card.agotado {
+      opacity: 0.65;
+      cursor: not-allowed;
+      filter: grayscale(0.85);
+    }
+    .prod-card.agotado:hover {
+      transform: none;
+      box-shadow: none;
+      border-color: #e2e8f0;
+    }
+
+    .prod-banner {
+      height: 105px;
+      background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 44px;
+      position: relative;
+    }
+    .prod-cat-tag {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(4px);
+      color: #5b21b6;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 8px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    .prod-body {
+      padding: 14px 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .prod-title {
+      font-weight: 800;
+      font-size: 15px;
+      color: #1e293b;
+      margin-bottom: 5px;
+      line-height: 1.3;
+    }
+    .prod-desc {
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 12px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .prod-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+    .prod-badge-crema {
+      font-size: 10px;
+      font-weight: 800;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+    .prod-badge-salsa {
+      font-size: 10px;
+      font-weight: 800;
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+    .prod-badge-stock {
+      font-size: 10px;
+      font-weight: 800;
+      background: #f0fdf4;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+
+    .prod-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px dashed #f1f5f9;
+      padding-top: 12px;
+      margin-top: 6px;
+    }
+    .prod-price {
+      font-size: 18px;
+      font-weight: 900;
+      color: #6d28d9;
+    }
+    .prod-add-btn {
+      padding: 8px 14px;
+      border-radius: 10px;
+      background: #7c3aed;
+      color: #ffffff;
+      border: none;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .prod-add-btn:hover {
+      background: #6d28d9;
+      transform: scale(1.05);
+    }
+
+    /* Modal Flotante de Cremas y Salsas para Delivery */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      z-index: 1000;
+      place-items: center;
+      backdrop-filter: blur(4px);
+    }
+    .modal-backdrop.open {
+      display: grid;
+    }
+    .modal-card {
+      background: #ffffff;
+      border-radius: 22px;
+      width: min(540px, 94vw);
+      padding: 24px;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3);
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: modalSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalSlide {
+      from { transform: translateY(20px) scale(0.97); opacity: 0; }
+      to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    .modal-section-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    /* Chips de Cremas seleccionables */
+    .cremas-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .crema-toggle-chip {
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s;
+    }
+    .crema-toggle-chip:hover {
+      border-color: #8b5cf6;
+      background: #faf5ff;
+    }
+    .crema-toggle-chip.selected {
+      background: #ede9fe;
+      border-color: #7c3aed;
+      color: #5b21b6;
+      box-shadow: 0 2px 8px rgba(124, 58, 237, 0.15);
+    }
+    .crema-check-icon {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      border: 1.5px solid #94a3b8;
+      display: grid;
+      place-items: center;
+      font-size: 10px;
+      font-weight: 900;
+    }
+    .crema-toggle-chip.selected .crema-check-icon {
+      background: #7c3aed;
+      border-color: #7c3aed;
+      color: #ffffff;
+    }
+
+    /* Selector de Salsas con Stepper */
+    .salsa-select-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      margin-bottom: 8px;
+    }
+    .salsa-stepper {
+      display: inline-flex;
+      align-items: center;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .salsa-stepper button {
+      width: 28px;
+      height: 28px;
+      background: none;
+      border: none;
+      font-weight: 800;
+      cursor: pointer;
+      color: #6d28d9;
+    }
+    .salsa-stepper button:hover {
+      background: #ede9fe;
+    }
+    .salsa-stepper span {
+      min-width: 26px;
+      text-align: center;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    /* Barra Flotante Inferior */
+    .floating-cart-bar {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e293b;
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: 999px;
+      box-shadow: 0 14px 35px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      z-index: 999;
+      backdrop-filter: blur(8px);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .floating-cart-bar.hidden {
+      transform: translateX(-50%) translateY(120px);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Toast Notification */
+    .toast-box {
+      position: fixed;
+      top: 85px;
+      right: 30px;
+      background: #1e293b;
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: 14px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      z-index: 1050;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transform: translateY(-20px);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s ease;
+    }
+    .toast-box.show {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content" style="max-width: 1550px;">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <!-- Barra Superior de Navegación del Catálogo Delivery -->
+      <div class="delivery-topbar-strip">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <a class="btn btn-soft btn-sm" th:href="@{/delivery}">← Volver a Envíos</a>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <b style="font-size: 22px; color: #5b21b6;">🛵 Carta Delivery</b>
+              <span class="badge" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">Toma de Pedido</span>
+            </div>
+            <small class="muted">
+              Selecciona los platos para el envío a domicilio. Los productos con cremas o salsas se configuran de inmediato en ventana flotante.
+            </small>
+          </div>
+        </div>
+
+        <!-- Botón de Acceso al Carrito Separado -->
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <a class="btn-cart-nav" id="btnIrAlCarrito" th:href="@{/delivery/carrito}">
+            <span>🛒 Ver Carrito Delivery</span>
+            <span class="cart-badge-count" id="cartCountBadge" th:text="${carrito != null ? carrito.cantidadTotal : 0}">0</span>
+            <span id="cartTotalBadge" th:text="'S/ ' + ${#numbers.formatDecimal(carrito != null ? carrito.total : 0, 1, 2)}">S/ 0.00</span>
+            <span>→</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Filtro de Categorías con Barra de Desplazamiento y Controles -->
+      <div class="category-chips-bar">
+        <button type="button" class="cat-nav-btn cat-nav-prev" onclick="scrollCatChips(-240)" title="Ver categorías anteriores" aria-label="Anterior">‹</button>
+        <div class="category-chips" id="catChipsContainer">
+          <button type="button" class="cat-chip active" onclick="filtrarCategoria('TODOS', this)">
+            🌟 Todos los Platos
+          </button>
+          <button type="button" th:each="cat : ${categorias}"
+                  class="cat-chip"
+                  th:data-cat="${cat.idCategoria}"
+                  onclick="filtrarCategoria(this.dataset.cat, this)"
+                  th:text="${cat.nombre}">
+          </button>
+        </div>
+        <button type="button" class="cat-nav-btn cat-nav-next" onclick="scrollCatChips(240)" title="Ver más categorías" aria-label="Siguiente">›</button>
+      </div>
+
+      <!-- Buscador en Vivo por Texto -->
+      <div class="search-box-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="buscadorInput" placeholder="Buscar plato o bebida (ej. Alitas, Hamburguesa, Salchipapa, Broaster, Gaseosa)..." onkeyup="filtrarPorTexto()">
+      </div>
+
+      <!-- Catálogo de Productos a Ancho Completo -->
+      <div class="products-grid" id="productosGrid">
+        <div th:each="prod : ${productos}"
+             class="prod-card"
+             th:classappend="${prod.controlaStock == true and prod.stock != null and prod.stock <= 0} ? 'agotado' : ''"
+             th:data-id="${prod.idProducto}"
+             th:data-cat="${prod.categoria != null ? prod.categoria.idCategoria : ''}"
+             th:data-catnombre="${prod.categoria != null ? #strings.toUpperCase(prod.categoria.nombre) : ''}"
+             th:data-tipo="${prod.tipo != null ? prod.tipo.name() : prod.inferirTipo().name()}"
+             th:data-nombre="${#strings.toLowerCase(prod.nombre)}"
+             th:data-nombre-display="${prod.nombre}"
+             th:data-precio="${prod.precio}"
+             th:data-stock="${prod.stock != null ? prod.stock : 0}"
+             th:data-controla-stock="${prod.controlaStock == true}"
+             th:data-permite-crema="${prod.permiteCrema == true}"
+             th:data-permite-salsa="${prod.permiteSalsa == true}"
+             th:data-limite-salsa="${prod.limiteSalsa != null ? prod.limiteSalsa : 0}"
+             onclick="clickProducto(this)">
+
+          <div class="prod-banner">
+            <span th:if="${#strings.containsIgnoreCase(prod.nombre, 'alita')}">🍗</span>
+            <span th:unless="${#strings.containsIgnoreCase(prod.nombre, 'alita')}"
+                  th:text="${#strings.containsIgnoreCase(prod.nombre, 'salchi') ? '🍟' : (#strings.containsIgnoreCase(prod.nombre, 'hamburg') ? '🍔' : (#strings.containsIgnoreCase(prod.nombre, 'bebida') or #strings.containsIgnoreCase(prod.nombre, 'gaseosa') ? '🥤' : (#strings.containsIgnoreCase(prod.nombre, 'broaster') ? '🍗' : (#strings.containsIgnoreCase(prod.nombre, 'salsa') ? '🌶' : '🍽️'))))}">🍽️</span>
+
+            <span class="prod-cat-tag" th:text="${prod.categoria != null ? prod.categoria.nombre : 'Plato'}"></span>
+            <span th:if="${prod.tipo != null and prod.tipo.name() == 'EXTRA'}" style="font-size: 10px; background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 6px; font-weight: 700; margin-left: auto;">Extra (Salsa)</span>
+            <span th:if="${prod.tipo != null and prod.tipo.name() == 'ADICIONAL'}" style="font-size: 10px; background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 6px; font-weight: 700; margin-left: auto;">Adicional</span>
+            <span th:if="${prod.tipo != null and prod.tipo.name() == 'INTERMEDIO'}" style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 6px; font-weight: 700; margin-left: auto;">Bebida</span>
+          </div>
+
+          <div class="prod-body">
+            <div>
+              <div class="prod-title" th:text="${prod.nombre}">Nombre Producto</div>
+              <div class="prod-desc" th:text="${prod.descripcion != null and not #strings.isEmpty(prod.descripcion) ? prod.descripcion : 'Elaborado al momento con la receta tradicional de la casa.'}"></div>
+
+              <!-- Badges de características -->
+              <div class="prod-badges">
+                <!-- Stock -->
+                <span th:if="${prod.controlaStock == true and prod.stock != null and prod.stock <= 0}" class="badge badge-bad" style="font-size: 10px;">AGOTADO</span>
+                <span th:if="${prod.controlaStock == true and prod.stock != null and prod.stock > 0 and prod.stock <= 5}" class="badge badge-warn" style="font-size: 10px;" th:text="'Quedan ' + ${prod.stock}"></span>
+                <span th:if="${prod.controlaStock == true and prod.stock != null and prod.stock > 5}" class="prod-badge-stock" th:text="'Stock: ' + ${prod.stock}"></span>
+
+                <!-- Cremas -->
+                <span th:if="${prod.permiteCrema == true}" class="prod-badge-crema">🥣 Cremas</span>
+
+                <!-- Salsas -->
+                <span th:if="${prod.permiteSalsa == true or (prod.limiteSalsa != null and prod.limiteSalsa > 0)}"
+                      class="prod-badge-salsa"
+                      th:text="${prod.limiteSalsa != null and prod.limiteSalsa > 0 ? ('🌶️ ' + prod.limiteSalsa + ' Salsas') : '🌶️ Salsas'}"></span>
+              </div>
+            </div>
+
+            <div class="prod-footer">
+              <div class="prod-price" th:text="'S/ ' + ${#numbers.formatDecimal(prod.precio, 1, 2)}">S/ 0.00</div>
+              <button type="button" class="prod-add-btn">
+                <span th:if="${prod.permiteCrema == true or prod.permiteSalsa == true or (prod.limiteSalsa != null and prod.limiteSalsa > 0)}">⚙️ Elegir</span>
+                <span th:unless="${prod.permiteCrema == true or prod.permiteSalsa == true or (prod.limiteSalsa != null and prod.limiteSalsa > 0)}">+ Agregar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL FLOTANTE DE PERSONALIZACIÓN PARA DELIVERY (CREMAS & SALSAS) -->
+<!-- ============================================================== -->
+<div class="modal-backdrop" id="modalPersonalizar">
+  <div class="modal-card">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+      <div>
+        <div style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #7c3aed;" id="modalProdCategoria">PLATO</div>
+        <h3 id="modalProdNombre" style="margin: 2px 0 0; font-size: 19px; color: #1e293b;">Personalizar Plato</h3>
+        <div id="modalProdPrecio" style="font-size: 15px; font-weight: 800; color: #6d28d9; margin-top: 2px;">S/ 0.00</div>
+      </div>
+      <button type="button" class="btn btn-soft btn-sm" onclick="cerrarModalPersonalizar()" style="border-radius: 999px; width: 32px; height: 32px; padding: 0;">✕</button>
+    </div>
+
+    <!-- SECCIÓN 1: CREMAS PARA DELIVERY (Solo si permiteCrema == true) -->
+    <div class="modal-section-box" id="seccionCremas" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <b style="font-size: 14px; color: #1e293b;">🥣 Cremas para Delivery</b>
+          <div class="muted" style="font-size: 11px;">Elige las cremas que acompañarán este plato:</div>
+        </div>
+        <div style="display: flex; gap: 4px;">
+          <button type="button" class="btn btn-soft btn-sm" style="font-size: 10px; padding: 3px 8px;" onclick="seleccionarTodasCremas(true)">Todas</button>
+          <button type="button" class="btn btn-soft btn-sm" style="font-size: 10px; padding: 3px 8px;" onclick="seleccionarTodasCremas(false)">Ninguna</button>
+        </div>
+      </div>
+
+      <div class="cremas-grid" id="cremasContainer">
+        <div th:each="cr : ${cremas}"
+             class="crema-toggle-chip"
+             th:data-id="${cr.idCrema}"
+             onclick="toggleCrema(this)">
+          <span class="crema-check-icon">✓</span>
+          <span th:text="${cr.nombre}">Crema</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 2: SALSAS (Solo si permiteSalsa == true o límite > 0) -->
+    <div class="modal-section-box" id="seccionSalsas" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <div>
+          <b style="font-size: 14px; color: #1e293b;">🌶️ Salsas para el Plato</b>
+          <div class="muted" style="font-size: 11px;" id="salsaInstructionText">
+            Selecciona las salsas:
+          </div>
+        </div>
+        <div id="modalSalsaCounterBadge" class="badge badge-warn" style="font-size: 12px; font-weight: 800;">
+          <span id="modalSalsasCountActual">0</span> / <span id="modalSalsasCountLimite">0</span> salsas
+        </div>
+      </div>
+
+      <div style="max-height: 220px; overflow-y: auto; padding-right: 4px;" id="salsasContainer">
+        <th:block th:each="salsa : ${salsas}">
+          <div th:if="${!#strings.containsIgnoreCase(salsa.nombre, 'alita') and (salsa.categoria == null or !#strings.containsIgnoreCase(salsa.categoria.nombre, 'alita'))}"
+               class="salsa-select-item"
+               th:data-id="${salsa.idProducto}">
+            <div>
+              <b th:text="${salsa.nombre}">Salsa</b>
+              <div th:if="${salsa.descripcion != null}" class="muted" style="font-size: 11px;" th:text="${salsa.descripcion}"></div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #78350f; background: #fef3c7; border: 1px solid #fde68a; padding: 4px 8px; border-radius: 6px; cursor: pointer; user-select: none;">
+                <input type="checkbox" class="check-todas-salsa-delivery" th:data-id="${salsa.idProducto}" onchange="marcarTodasDeEstaSalsaDelivery(this.dataset.id, this.checked)">
+                <span>Todas</span>
+              </label>
+              <div class="salsa-stepper">
+                <button type="button" th:data-id="${salsa.idProducto}" onclick="cambiarSalsa(this.dataset.id, -1)">−</button>
+                <span th:id="'salsa-qty-' + ${salsa.idProducto}">0</span>
+                <button type="button" th:data-id="${salsa.idProducto}" onclick="cambiarSalsa(this.dataset.id, 1)">+</button>
+              </div>
+            </div>
+          </div>
+        </th:block>
+      </div>
+
+      <div id="modalSalsaValidationMsg" style="font-size: 12px; font-weight: 700; color: #dc2626; margin-top: 8px; display: none;">
+        ⚠️ Debe seleccionar la cantidad exacta de salsas.
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;">
+      <button type="button" class="btn btn-soft" onclick="cerrarModalPersonalizar()">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="btnConfirmarPersonalizar" onclick="confirmarAgregarPersonalizado()">
+        🛒 Agregar al Carrito Delivery
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Barra Flotante Inferior de Carrito -->
+<div class="floating-cart-bar hidden" id="floatingCartBar">
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="font-size: 20px;">🛒</span>
+    <div>
+      <b id="floatItemCount">0 platos</b> en el pedido
+    </div>
+  </div>
+  <div style="font-size: 18px; font-weight: 900; color: #c4b5fd;" id="floatTotal">
+    S/ 0.00
+  </div>
+  <a th:href="@{/delivery/carrito}" class="btn btn-primary btn-sm" style="border-radius: 999px; padding: 8px 16px;">
+    Ver Carrito Delivery →
+  </a>
+</div>
+
+<!-- Toast flotante de confirmación -->
+<div class="toast-box" id="toastBox">
+  <span id="toastIcon">✅</span>
+  <span id="toastMsg">Plato agregado al carrito</span>
+</div>
+
+<script th:inline="javascript">
+  let tienePrincipalActivo = /*[[${tienePrincipalActivo}]]*/ false;
+  let modalProductoActual = null;
+  let salsasSeleccionadas = {}; // idSalsa -> cantidad
+  let cremasSeleccionadas = new Set(); // set of idCrema
+
+  // Desplazamiento manual por botones de flechas
+  function scrollCatChips(offset) {
+    const container = document.getElementById('catChipsContainer');
+    if (container) {
+      container.scrollBy({ left: offset, behavior: 'smooth' });
+    }
+  }
+
+  // Soporte de desplazamiento horizontal con rueda del ratón
+  document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('catChipsContainer');
+    if (container) {
+      container.addEventListener('wheel', function(e) {
+        if (e.deltaY !== 0) {
+          e.preventDefault();
+          container.scrollLeft += (e.deltaY * 1.5);
+        }
+      }, { passive: false });
+    }
+  });
+
+  function filtrarCategoria(catId, btn) {
+    document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    
+    // Auto-centrar la categoría seleccionada
+    if (btn.scrollIntoView) {
+      btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+
+    const cards = document.querySelectorAll('.prod-card');
+    cards.forEach(card => {
+      if (catId === 'TODOS' || card.dataset.cat === String(catId)) {
+        card.style.display = 'flex';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  function filtrarPorTexto() {
+    const q = document.getElementById('buscadorInput').value.trim().toLowerCase();
+    const cards = document.querySelectorAll('.prod-card');
+    cards.forEach(card => {
+      const nom = card.dataset.nombre || '';
+      if (!q || nom.includes(q)) {
+        card.style.display = 'flex';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  function clickProducto(card) {
+    const stock = parseInt(card.getAttribute('data-stock') || card.dataset.stock || 0);
+    const controlaStock = (card.getAttribute('data-controla-stock') || card.dataset.controlaStock) === 'true';
+
+    // Regla de Stock
+    if (controlaStock && stock <= 0) {
+      mostrarToast('❌ Este producto se encuentra AGOTADO', 'warning');
+      return;
+    }
+
+    const tipo = card.getAttribute('data-tipo') || card.dataset.tipo || 'PRINCIPAL';
+
+    // Regla de Venta: Salsas (Extras) o adicionales
+    if (tipo === 'EXTRA' && !tienePrincipalActivo) {
+      mostrarToast('⚠️ Debe seleccionar al menos una porción de alitas antes de agregar extras en salsas.', 'warning');
+      return;
+    }
+    if (tipo === 'ADICIONAL' && !tienePrincipalActivo) {
+      mostrarToast('⚠️ Debe seleccionar al menos un plato principal antes de agregar adicionales.', 'warning');
+      return;
+    }
+
+    const id = card.getAttribute('data-id') || card.dataset.id;
+    const nombreDisplay = card.getAttribute('data-nombre-display') || card.dataset.nombreDisplay || 'Plato';
+    const precio = card.getAttribute('data-precio') || card.dataset.precio || '0.00';
+    const catNombre = card.getAttribute('data-catnombre') || card.dataset.catnombre || '';
+    const prodNombre = card.getAttribute('data-nombre') || card.dataset.nombre || '';
+
+    const permiteCrema = (card.getAttribute('data-permite-crema') || card.dataset.permiteCrema) === 'true';
+    const permiteSalsa = (card.getAttribute('data-permite-salsa') || card.dataset.permiteSalsa) === 'true';
+    const limiteSalsa = parseInt(card.getAttribute('data-limite-salsa') || card.dataset.limiteSalsa || 0);
+    const esAlitas = catNombre.includes('ALITA') || prodNombre.includes('alita');
+
+    const necesitaFlotante = permiteCrema || permiteSalsa || limiteSalsa > 0 || (esAlitas && limiteSalsa > 0);
+
+    if (necesitaFlotante) {
+      abrirModalPersonalizar(card, {
+        id: id,
+        nombre: nombreDisplay,
+        precio: precio,
+        categoria: catNombre || 'PLATO',
+        permiteCrema: permiteCrema,
+        permiteSalsa: permiteSalsa || esAlitas,
+        limiteSalsa: limiteSalsa
+      });
+    } else {
+      // 1-Click directo para productos regulares
+      agregarItemAjax(id, [], []);
+    }
+  }
+
+  function abrirModalPersonalizar(card, prod) {
+    modalProductoActual = prod;
+    salsasSeleccionadas = {};
+    cremasSeleccionadas.clear();
+
+    document.getElementById('modalProdNombre').textContent = prod.nombre;
+    document.getElementById('modalProdCategoria').textContent = prod.categoria;
+    document.getElementById('modalProdPrecio').textContent = 'S/ ' + parseFloat(prod.precio).toFixed(2);
+
+    // Resetear Cremas
+    const seccionCremas = document.getElementById('seccionCremas');
+    if (prod.permiteCrema) {
+      seccionCremas.style.display = 'block';
+      document.querySelectorAll('.crema-toggle-chip').forEach(ch => ch.classList.remove('selected'));
+    } else {
+      seccionCremas.style.display = 'none';
+    }
+
+    // Resetear Salsas
+    const seccionSalsas = document.getElementById('seccionSalsas');
+    const badgeSalsa = document.getElementById('modalSalsaCounterBadge');
+    const msgValidacion = document.getElementById('modalSalsaValidationMsg');
+    msgValidacion.style.display = 'none';
+
+    // Limpiar steppers y checkboxes de salsa
+    document.querySelectorAll('[id^="salsa-qty-"]').forEach(el => el.textContent = '0');
+    document.querySelectorAll('.check-todas-salsa-delivery').forEach(cb => cb.checked = false);
+
+    if (prod.permiteSalsa || prod.limiteSalsa > 0) {
+      seccionSalsas.style.display = 'block';
+      document.getElementById('modalSalsasCountLimite').textContent = prod.limiteSalsa;
+      document.getElementById('modalSalsasCountActual').textContent = '0';
+
+      if (prod.limiteSalsa > 0) {
+        badgeSalsa.style.display = 'inline-block';
+        document.getElementById('salsaInstructionText').innerHTML =
+          `Elige exactamente <b>${prod.limiteSalsa}</b> salsas:`;
+        actualizarEstadoBotonConfirmar(false);
+      } else {
+        badgeSalsa.style.display = 'none';
+        document.getElementById('salsaInstructionText').textContent = 'Elige las salsas deseadas (opcional):';
+        actualizarEstadoBotonConfirmar(true);
+      }
+    } else {
+      seccionSalsas.style.display = 'none';
+      actualizarEstadoBotonConfirmar(true);
+    }
+
+    document.getElementById('modalPersonalizar').classList.add('open');
+  }
+
+  function cerrarModalPersonalizar() {
+    document.getElementById('modalPersonalizar').classList.remove('open');
+    modalProductoActual = null;
+  }
+
+  // Lógica de Cremas
+  function toggleCrema(chip) {
+    const id = parseInt(chip.dataset.id);
+    if (cremasSeleccionadas.has(id)) {
+      cremasSeleccionadas.delete(id);
+      chip.classList.remove('selected');
+    } else {
+      cremasSeleccionadas.add(id);
+      chip.classList.add('selected');
+    }
+  }
+
+  function seleccionarTodasCremas(seleccionar) {
+    document.querySelectorAll('.crema-toggle-chip').forEach(chip => {
+      const id = parseInt(chip.dataset.id);
+      if (seleccionar) {
+        cremasSeleccionadas.add(id);
+        chip.classList.add('selected');
+      } else {
+        chip.classList.remove('selected');
+      }
+    });
+    if (!seleccionar) cremasSeleccionadas.clear();
+  }
+
+  // Opción de Check para elegir todas las salsas de un solo sabor en Delivery
+  function marcarTodasDeEstaSalsaDelivery(idSalsa, checked) {
+    if (!modalProductoActual) return;
+    idSalsa = parseInt(idSalsa);
+    const limite = modalProductoActual.limiteSalsa || 0;
+
+    // Desmarcar otros checkboxes
+    document.querySelectorAll('.check-todas-salsa-delivery').forEach(cb => {
+      if (cb.dataset.id !== String(idSalsa)) {
+        cb.checked = false;
+      }
+    });
+
+    // Limpiar steppers y mapa
+    for (let sId in salsasSeleccionadas) {
+      delete salsasSeleccionadas[sId];
+      const span = document.getElementById('salsa-qty-' + sId);
+      if (span) span.textContent = '0';
+    }
+
+    if (checked && limite > 0) {
+      salsasSeleccionadas[idSalsa] = limite;
+      const span = document.getElementById('salsa-qty-' + idSalsa);
+      if (span) span.textContent = limite;
+    }
+
+    const totalSeleccionado = Object.values(salsasSeleccionadas).reduce((a, b) => a + b, 0);
+    document.getElementById('modalSalsasCountActual').textContent = totalSeleccionado;
+
+    // Validación
+    const msgValidacion = document.getElementById('modalSalsaValidationMsg');
+    const badge = document.getElementById('modalSalsaCounterBadge');
+
+    if (limite > 0) {
+      if (totalSeleccionado === limite) {
+        badge.className = 'badge badge-ok';
+        msgValidacion.style.display = 'none';
+        actualizarEstadoBotonConfirmar(true);
+      } else {
+        badge.className = 'badge badge-warn';
+        msgValidacion.style.display = 'block';
+        msgValidacion.textContent = `⚠️ Faltan ${limite - totalSeleccionado} salsas por seleccionar.`;
+        actualizarEstadoBotonConfirmar(false);
+      }
+    } else {
+      actualizarEstadoBotonConfirmar(true);
+    }
+  }
+
+  // Lógica de Salsas
+  function cambiarSalsa(idSalsa, delta) {
+    if (!modalProductoActual) return;
+    idSalsa = parseInt(idSalsa);
+    const limite = modalProductoActual.limiteSalsa || 0;
+
+    let actual = salsasSeleccionadas[idSalsa] || 0;
+    let totalSeleccionado = Object.values(salsasSeleccionadas).reduce((a, b) => a + b, 0);
+
+    if (delta > 0) {
+      if (limite > 0 && totalSeleccionado >= limite) {
+        mostrarToast('⚠️ Ya completaste el límite de ' + limite + ' salsas', 'warning');
+        return;
+      }
+      actual++;
+    } else if (delta < 0 && actual > 0) {
+      actual--;
+    }
+
+    if (actual > 0) {
+      salsasSeleccionadas[idSalsa] = actual;
+    } else {
+      delete salsasSeleccionadas[idSalsa];
+    }
+
+    const span = document.getElementById('salsa-qty-' + idSalsa);
+    if (span) span.textContent = actual;
+
+    // Sincronizar checkbox "Todas"
+    const cb = document.querySelector(`.check-todas-salsa-delivery[data-id="${idSalsa}"]`);
+    if (cb) {
+      cb.checked = (actual === limite && limite > 0);
+    }
+    if (delta > 0) {
+      document.querySelectorAll('.check-todas-salsa-delivery').forEach(otherCb => {
+        if (otherCb.dataset.id !== String(idSalsa)) {
+          otherCb.checked = false;
+        }
+      });
+    }
+
+    totalSeleccionado = Object.values(salsasSeleccionadas).reduce((a, b) => a + b, 0);
+    document.getElementById('modalSalsasCountActual').textContent = totalSeleccionado;
+
+    // Validación
+    const msgValidacion = document.getElementById('modalSalsaValidationMsg');
+    const badge = document.getElementById('modalSalsaCounterBadge');
+
+    if (limite > 0) {
+      if (totalSeleccionado === limite) {
+        badge.className = 'badge badge-ok';
+        msgValidacion.style.display = 'none';
+        actualizarEstadoBotonConfirmar(true);
+      } else {
+        badge.className = 'badge badge-warn';
+        msgValidacion.style.display = 'block';
+        msgValidacion.textContent = `⚠️ Faltan ${limite - totalSeleccionado} salsas por seleccionar.`;
+        actualizarEstadoBotonConfirmar(false);
+      }
+    } else {
+      actualizarEstadoBotonConfirmar(true);
+    }
+  }
+
+  function actualizarEstadoBotonConfirmar(habilitar) {
+    const btn = document.getElementById('btnConfirmarPersonalizar');
+    btn.disabled = !habilitar;
+    btn.style.opacity = habilitar ? '1' : '0.5';
+    btn.style.cursor = habilitar ? 'pointer' : 'not-allowed';
+  }
+
+  function confirmarAgregarPersonalizado() {
+    if (!modalProductoActual) return;
+
+    const limite = modalProductoActual.limiteSalsa || 0;
+    const totalSalsas = Object.values(salsasSeleccionadas).reduce((a, b) => a + b, 0);
+
+    if (limite > 0 && totalSalsas !== limite) {
+      document.getElementById('modalSalsaValidationMsg').style.display = 'block';
+      return;
+    }
+
+    // Convertir salsas repetidas a lista plana
+    const listaSalsas = [];
+    for (const [idS, cant] of Object.entries(salsasSeleccionadas)) {
+      for (let i = 0; i < cant; i++) {
+        listaSalsas.push(parseInt(idS));
+      }
+    }
+
+    const listaCremas = Array.from(cremasSeleccionadas);
+
+    agregarItemAjax(modalProductoActual.id, listaCremas, listaSalsas);
+    cerrarModalPersonalizar();
+  }
+
+  function agregarItemAjax(idProducto, idCremas, idSalsas) {
+    const formData = new URLSearchParams();
+    formData.append('idProducto', idProducto);
+    if (idCremas && idCremas.length > 0) {
+      idCremas.forEach(c => formData.append('idCremas', c));
+    }
+    if (idSalsas && idSalsas.length > 0) {
+      idSalsas.forEach(s => formData.append('idSalsas', s));
+    }
+
+    fetch('/delivery/cart/add', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: formData.toString()
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        if (data.tienePrincipal !== undefined) {
+          tienePrincipalActivo = data.tienePrincipal;
+        }
+        actualizarUIBadgeCarrito(data.cantidadTotal, data.total);
+        mostrarToast('✅ Agregado: ' + data.producto, 'success');
+      } else {
+        mostrarToast('❌ ' + data.error, 'error');
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      mostrarToast('❌ Error de comunicación al agregar producto', 'error');
+    });
+  }
+
+  function actualizarUIBadgeCarrito(cantidad, total) {
+    document.getElementById('cartCountBadge').textContent = cantidad;
+    document.getElementById('cartTotalBadge').textContent = 'S/ ' + parseFloat(total).toFixed(2);
+
+    const bar = document.getElementById('floatingCartBar');
+    if (cantidad > 0) {
+      bar.classList.remove('hidden');
+      document.getElementById('floatItemCount').textContent = cantidad + (cantidad === 1 ? ' plato' : ' platos');
+      document.getElementById('floatTotal').textContent = 'S/ ' + parseFloat(total).toFixed(2);
+    } else {
+      bar.classList.add('hidden');
+    }
+  }
+
+  function mostrarToast(msg, tipo) {
+    const t = document.getElementById('toastBox');
+    const msgEl = document.getElementById('toastMsg');
+    const iconEl = document.getElementById('toastIcon');
+
+    msgEl.textContent = msg;
+    if (tipo === 'warning') {
+      iconEl.textContent = '⚠️';
+      t.style.background = '#854d0e';
+    } else if (tipo === 'error') {
+      iconEl.textContent = '❌';
+      t.style.background = '#991b1b';
+    } else {
+      iconEl.textContent = '✅';
+      t.style.background = '#1e293b';
+    }
+
+    t.classList.add('show');
+    setTimeout(() => {
+      t.classList.remove('show');
+    }, 2800);
+  }
+
+  // Inicializar estado flotante si ya habían platos en sesión
+  window.addEventListener('DOMContentLoaded', () => {
+    const badgeCount = parseInt(document.getElementById('cartCountBadge').textContent || '0');
+    if (badgeCount > 0) {
+      const totalTxt = document.getElementById('cartTotalBadge').textContent.replace('S/', '').trim();
+      actualizarUIBadgeCarrito(badgeCount, parseFloat(totalTxt));
+    }
+  });
+</script>
+</body>
+</html>

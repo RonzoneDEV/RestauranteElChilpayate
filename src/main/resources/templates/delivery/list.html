@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Control y Despacho Delivery · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css(v='3.2')}">
+  <style>
+    :root {
+      --del-primary: #7c3aed;
+      --del-primary-hover: #6d28d9;
+      --del-primary-light: #ede9fe;
+      --del-accent: #f59e0b;
+      --del-dark: #1e293b;
+    }
+
+    /* KPI Metrics Grid */
+    .delivery-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .kpi-card-link {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .kpi-card {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px 18px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.03);
+      transition: all 0.2s ease;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 22px rgba(124, 58, 237, 0.12);
+      border-color: #c4b5fd;
+    }
+    .kpi-card.active {
+      border-color: #7c3aed;
+      background: #faf5ff;
+      box-shadow: 0 4px 16px rgba(124, 58, 237, 0.18);
+    }
+    .kpi-label {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .kpi-val {
+      font-size: 28px;
+      font-weight: 900;
+      color: #1e293b;
+      line-height: 1;
+    }
+    .kpi-desc {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 6px;
+    }
+
+    /* Filtros tipo Pills */
+    .filter-pills {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 20px;
+      scrollbar-width: thin;
+    }
+    .filter-pill {
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .filter-pill:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+    .filter-pill.active {
+      background: #7c3aed;
+      color: #ffffff;
+      border-color: #7c3aed;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+    }
+
+    /* Tarjetas de Pedido Delivery con Trayecto */
+    .delivery-order-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.03);
+      transition: all 0.2s ease;
+    }
+    .delivery-order-card:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+    .delivery-order-card.pendiente-pago {
+      border-left: 6px solid #f59e0b;
+      background: #fffdfa;
+    }
+    .delivery-order-card.en-cocina {
+      border-left: 6px solid #3b82f6;
+    }
+    .delivery-order-card.listo-barra {
+      border-left: 6px solid #10b981;
+      background: #f0fdf4;
+    }
+    .delivery-order-card.en-camino {
+      border-left: 6px solid #8b5cf6;
+    }
+    .delivery-order-card.entregado {
+      border-left: 6px solid #64748b;
+      opacity: 0.9;
+    }
+
+    /* Stepper visual de trayecto */
+    .pipeline-stepper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 16px 0 20px;
+      padding: 12px 18px;
+      background: #f8fafc;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      overflow-x: auto;
+      gap: 8px;
+    }
+    .step-node {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #94a3b8;
+      white-space: nowrap;
+    }
+    .step-circle {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #64748b;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .step-node.completed .step-circle {
+      background: #10b981;
+      color: #ffffff;
+    }
+    .step-node.completed {
+      color: #065f46;
+    }
+    .step-node.current .step-circle {
+      background: #7c3aed;
+      color: #ffffff;
+      box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.2);
+    }
+    .step-node.current {
+      color: #5b21b6;
+      font-weight: 900;
+    }
+    .step-line {
+      flex: 1;
+      height: 2px;
+      background: #e2e8f0;
+      min-width: 20px;
+    }
+    .step-line.active {
+      background: #10b981;
+    }
+
+    /* Grilla de Datos del Pedido */
+    .order-details-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1.2fr 0.9fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .info-block-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .info-block-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    .plate-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 6px 0;
+      border-bottom: 1px dashed #e2e8f0;
+      font-size: 13px;
+    }
+    .plate-item-row:last-child {
+      border-bottom: none;
+    }
+
+    /* Modal de Confirmación de Pago */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      z-index: 1000;
+      place-items: center;
+      backdrop-filter: blur(4px);
+    }
+    .modal-backdrop.open {
+      display: grid;
+    }
+    .modal-card {
+      background: #ffffff;
+      border-radius: 22px;
+      width: min(480px, 94vw);
+      padding: 24px;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3);
+      animation: modalSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @media (max-width: 992px) {
+      .order-details-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content" style="max-width: 1550px;">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <!-- Encabezado de Página -->
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; flex-wrap: wrap; gap: 14px;">
+        <div>
+          <div class="eyebrow" style="color: #7c3aed;">🛵 Centro de Control de Despacho</div>
+          <h1 class="page-title">Monitoreo de Delivery</h1>
+          <p class="muted">
+            Gestión y seguimiento del trayecto completo: Cobro por adelantado (Yape/Plin) → Preparación en Cocina → Empaque en Barra → Repartidor → Entrega.
+          </p>
+        </div>
+        <div>
+          <a class="btn btn-primary" th:href="@{/delivery/create}" style="padding: 12px 22px; font-size: 15px; font-weight: 800; border-radius: 14px;">
+            + Tomar Pedido Delivery
+          </a>
+        </div>
+      </div>
+
+      <!-- Tarjetas KPI de Estado (Command Center) -->
+      <div class="delivery-kpi-grid">
+        <!-- 1. Pendientes de Pago -->
+        <a th:href="@{/delivery(filtro='PENDIENTE_PAGO')}" class="kpi-card-link">
+          <div class="kpi-card" th:classappend="${filtroActual == 'PENDIENTE_PAGO' ? 'active' : ''}">
+            <div class="kpi-label">
+              <span>⏳</span> Pendientes de Pago
+            </div>
+            <div class="kpi-val" style="color: #b45309;" th:text="${pendientesPago}">0</div>
+            <div class="kpi-desc">Esperando Yape / Plin / Transferencia</div>
+          </div>
+        </a>
+
+        <!-- 2. En Cocina -->
+        <a th:href="@{/delivery(filtro='EN_PREPARACION')}" class="kpi-card-link">
+          <div class="kpi-card" th:classappend="${filtroActual == 'EN_PREPARACION' ? 'active' : ''}">
+            <div class="kpi-label">
+              <span>🍳</span> En Cocina
+            </div>
+            <div class="kpi-val" style="color: #2563eb;" th:text="${enCocina}">0</div>
+            <div class="kpi-desc">Cocineros preparando la comanda</div>
+          </div>
+        </a>
+
+        <!-- 3. Listos en Barra -->
+        <a th:href="@{/delivery(filtro='LISTO')}" class="kpi-card-link">
+          <div class="kpi-card" th:classappend="${filtroActual == 'LISTO' ? 'active' : ''}">
+            <div class="kpi-label">
+              <span>📦</span> Listos en Barra
+            </div>
+            <div class="kpi-val" style="color: #16a34a;" th:text="${listos}">0</div>
+            <div class="kpi-desc">¡Platos listos! Empacar y entregar</div>
+          </div>
+        </a>
+
+        <!-- 4. En Camino -->
+        <a th:href="@{/delivery(filtro='EN_CAMINO')}" class="kpi-card-link">
+          <div class="kpi-card" th:classappend="${filtroActual == 'EN_CAMINO' ? 'active' : ''}">
+            <div class="kpi-label">
+              <span>🛵</span> En Camino
+            </div>
+            <div class="kpi-val" style="color: #7c3aed;" th:text="${enCamino}">0</div>
+            <div class="kpi-desc">En ruta con el repartidor</div>
+          </div>
+        </a>
+
+        <!-- 5. Entregados -->
+        <a th:href="@{/delivery(filtro='ENTREGADO')}" class="kpi-card-link">
+          <div class="kpi-card" th:classappend="${filtroActual == 'ENTREGADO' ? 'active' : ''}">
+            <div class="kpi-label">
+              <span>✅</span> Entregados
+            </div>
+            <div class="kpi-val" style="color: #475569;" th:text="${entregados}">0</div>
+            <div class="kpi-desc">Completados con éxito</div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Filtros tipo Pills -->
+      <div class="filter-pills">
+        <a th:href="@{/delivery(filtro='TODOS')}"
+           class="filter-pill" th:classappend="${filtroActual == 'TODOS' ? 'active' : ''}">
+          🌟 Todos los Envíos (<span th:text="${totalEnvios}">0</span>)
+        </a>
+        <a th:href="@{/delivery(filtro='PENDIENTE_PAGO')}"
+           class="filter-pill" th:classappend="${filtroActual == 'PENDIENTE_PAGO' ? 'active' : ''}">
+          ⏳ Pendientes de Pago (<span th:text="${pendientesPago}">0</span>)
+        </a>
+        <a th:href="@{/delivery(filtro='EN_PREPARACION')}"
+           class="filter-pill" th:classappend="${filtroActual == 'EN_PREPARACION' ? 'active' : ''}">
+          🍳 En Cocina (<span th:text="${enCocina}">0</span>)
+        </a>
+        <a th:href="@{/delivery(filtro='LISTO')}"
+           class="filter-pill" th:classappend="${filtroActual == 'LISTO' ? 'active' : ''}">
+          📦 Listos para Despacho (<span th:text="${listos}">0</span>)
+        </a>
+        <a th:href="@{/delivery(filtro='EN_CAMINO')}"
+           class="filter-pill" th:classappend="${filtroActual == 'EN_CAMINO' ? 'active' : ''}">
+          🛵 En Camino (<span th:text="${enCamino}">0</span>)
+        </a>
+        <a th:href="@{/delivery(filtro='ENTREGADO')}"
+           class="filter-pill" th:classappend="${filtroActual == 'ENTREGADO' ? 'active' : ''}">
+          ✅ Entregados (<span th:text="${entregados}">0</span>)
+        </a>
+        <a th:href="@{/delivery(filtro='ANULADO')}"
+           class="filter-pill" th:classappend="${filtroActual == 'ANULADO' ? 'active' : ''}">
+          ❌ Anulados (<span th:text="${anulados}">0</span>)
+        </a>
+      </div>
+
+      <!-- Lista de Pedidos con Seguimiento de Trayecto -->
+      <div th:if="${#lists.isEmpty(envios)}" class="card" style="text-align: center; padding: 50px 20px;">
+        <div style="font-size: 48px; margin-bottom: 12px;">🛵</div>
+        <h3 style="margin: 0 0 6px; color: #334155;">No hay pedidos de delivery en esta sección</h3>
+        <p class="muted" style="margin: 0 0 20px; font-size: 14px;">
+          Todos los despachos se encuentran al día o no coinciden con el filtro seleccionado.
+        </p>
+        <a class="btn btn-primary" th:href="@{/delivery/create}">+ Registrar Nuevo Pedido Delivery</a>
+      </div>
+
+      <div th:unless="${#lists.isEmpty(envios)}">
+        <div th:each="e : ${envios}"
+             class="delivery-order-card"
+             th:classappend="${e.estado.name() == 'PENDIENTE_PAGO' ? 'pendiente-pago' : (e.estado.name() == 'EN_PREPARACION' ? 'en-cocina' : (e.estado.name() == 'LISTO' ? 'listo-barra' : (e.estado.name() == 'EN_CAMINO' ? 'en-camino' : (e.estado.name() == 'ENTREGADO' ? 'entregado' : ''))))}">
+
+          <!-- Cabecera de la Tarjeta de Pedido -->
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <b style="font-size: 20px; color: #1e293b;" th:text="${e.pedido != null ? e.pedido.codigo : ('#' + e.idDelivery)}"></b>
+                <!-- Badge de Estado de Despacho -->
+                <span th:if="${e.estado.name() == 'PENDIENTE_PAGO'}" class="badge badge-warn" style="font-weight: 800;">
+                  ⏳ PENDIENTE DE PAGO
+                </span>
+                <span th:if="${e.estado.name() == 'EN_PREPARACION'}" class="badge badge-info" style="font-weight: 800;">
+                  🍳 EN COCINA (PREPARANDO)
+                </span>
+                <span th:if="${e.estado.name() == 'LISTO'}" class="badge badge-ok" style="font-weight: 800; background: #10b981; color: #ffffff;">
+                  📦 ¡LISTO EN BARRA!
+                </span>
+                <span th:if="${e.estado.name() == 'EN_CAMINO'}" class="badge" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">
+                  🛵 EN CAMINO
+                </span>
+                <span th:if="${e.estado.name() == 'ENTREGADO'}" class="badge badge-ok" style="font-weight: 800;">
+                  ✅ ENTREGADO
+                </span>
+                <span th:if="${e.estado.name() == 'ANULADO'}" class="badge badge-bad" style="font-weight: 800;">
+                  ❌ ANULADO
+                </span>
+              </div>
+
+              <div class="muted" style="font-size: 12px; margin-top: 4px;">
+                Registrado: <b th:text="${#temporals.format(e.fechaAsignacion, 'dd/MM/yyyy HH:mm')}"></b> ·
+                Atendido por: <span th:text="${e.pedido != null and e.pedido.usuario != null ? (e.pedido.usuario.nombres != null ? e.pedido.usuario.nombres : e.pedido.usuario.username) : 'Cajero'}"></span>
+              </div>
+            </div>
+
+            <!-- Información del Cobro por Adelantado -->
+            <div style="text-align: right;">
+              <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+                <span th:if="${e.pagado}" class="badge badge-ok" style="font-weight: 800;">
+                  💳 PAGADO (<span th:text="${e.metodoPago != null ? e.metodoPago : 'YAPE'}"></span>)
+                </span>
+                <span th:unless="${e.pagado}" class="badge badge-bad" style="font-weight: 800;">
+                  ⚠️ PAGO POR CONFIRMAR (<span th:text="${e.metodoPago != null ? e.metodoPago : 'YAPE'}"></span>)
+                </span>
+              </div>
+              <div th:if="${e.numeroOperacion != null and not #strings.isEmpty(e.numeroOperacion)}"
+                   class="muted" style="font-size: 11px; margin-top: 3px;"
+                   th:text="'Op: #' + ${e.numeroOperacion}"></div>
+              <div th:if="${e.pagado and e.pedido != null}" style="margin-top: 6px;">
+                <a class="btn btn-soft btn-sm" th:href="@{'/caja/comprobante/pedido/' + ${e.pedido.idPedido}}" target="_blank"
+                   style="font-size: 11px; font-weight: 800; color: #7c3aed; border-color: #c4b5fd; text-decoration: none; padding: 4px 10px; display: inline-flex; align-items: center; gap: 4px;">
+                  📄 Ver Comprobante
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stepper Visual del Trayecto para el Cajero -->
+          <div class="pipeline-stepper">
+            <!-- Paso 1: Cobro -->
+            <div class="step-node" th:classappend="${e.pagado ? 'completed' : 'current'}">
+              <span class="step-circle" th:text="${e.pagado ? '✓' : '1'}">1</span>
+              <span>1. Cobro por Adelantado</span>
+            </div>
+            <div class="step-line" th:classappend="${e.pagado ? 'active' : ''}"></div>
+
+            <!-- Paso 2: Cocina -->
+            <div class="step-node"
+                 th:classappend="${e.estado.name() == 'LISTO' or e.estado.name() == 'EN_CAMINO' or e.estado.name() == 'ENTREGADO' ? 'completed' : (e.estado.name() == 'EN_PREPARACION' ? 'current' : '')}">
+              <span class="step-circle"
+                    th:text="${e.estado.name() == 'LISTO' or e.estado.name() == 'EN_CAMINO' or e.estado.name() == 'ENTREGADO' ? '✓' : '2'}">2</span>
+              <span>2. Cocina (Preparación)</span>
+            </div>
+            <div class="step-line"
+                 th:classappend="${e.estado.name() == 'LISTO' or e.estado.name() == 'EN_CAMINO' or e.estado.name() == 'ENTREGADO' ? 'active' : ''}"></div>
+
+            <!-- Paso 3: Barra / Empaque -->
+            <div class="step-node"
+                 th:classappend="${e.estado.name() == 'EN_CAMINO' or e.estado.name() == 'ENTREGADO' ? 'completed' : (e.estado.name() == 'LISTO' ? 'current' : '')}">
+              <span class="step-circle"
+                    th:text="${e.estado.name() == 'EN_CAMINO' or e.estado.name() == 'ENTREGADO' ? '✓' : '3'}">3</span>
+              <span>3. Listo en Barra</span>
+            </div>
+            <div class="step-line"
+                 th:classappend="${e.estado.name() == 'EN_CAMINO' or e.estado.name() == 'ENTREGADO' ? 'active' : ''}"></div>
+
+            <!-- Paso 4: En Camino -->
+            <div class="step-node"
+                 th:classappend="${e.estado.name() == 'ENTREGADO' ? 'completed' : (e.estado.name() == 'EN_CAMINO' ? 'current' : '')}">
+              <span class="step-circle"
+                    th:text="${e.estado.name() == 'ENTREGADO' ? '✓' : '4'}">4</span>
+              <span>4. En Reparto</span>
+            </div>
+            <div class="step-line"
+                 th:classappend="${e.estado.name() == 'ENTREGADO' ? 'active' : ''}"></div>
+
+            <!-- Paso 5: Entregado -->
+            <div class="step-node"
+                 th:classappend="${e.estado.name() == 'ENTREGADO' ? 'completed' : ''}">
+              <span class="step-circle"
+                    th:text="${e.estado.name() == 'ENTREGADO' ? '✓' : '5'}">5</span>
+              <span>5. Entregado</span>
+            </div>
+          </div>
+
+          <!-- Grilla de Detalles y Botonera Operativa -->
+          <div class="order-details-grid">
+
+            <!-- Columna 1: Datos de Entrega y Cliente -->
+            <div class="info-block-box">
+              <div class="info-block-title">📍 Datos de Entrega</div>
+              <div style="font-size: 15px; font-weight: 800; color: #1e293b;">
+                👤 <span th:text="${e.pedido != null and e.pedido.cliente != null ? e.pedido.cliente.nombre : 'Cliente Directo'}"></span>
+              </div>
+              <div style="font-size: 13px; margin: 4px 0;">
+                📞 <b><span th:text="${e.telefono != null and not #strings.isEmpty(e.telefono) ? e.telefono : '-'}"></span></b>
+                <a th:if="${e.telefono != null and not #strings.isEmpty(e.telefono)}"
+                   th:href="'https://wa.me/51' + ${#strings.replace(#strings.replace(e.telefono, ' ', ''), '-', '')} + '?text=' + ${'Hola ' + (e.pedido != null and e.pedido.cliente != null ? e.pedido.cliente.nombre : '') + ', te saludamos de El Chilpayate. Tu pedido delivery ' + (e.pedido != null ? e.pedido.codigo : '') + ' se encuentra: ' + e.estado + '.'}"
+                   target="_blank"
+                   class="badge"
+                   style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; margin-left: 6px; font-size: 11px; text-decoration: none;">
+                  💬 WhatsApp
+                </a>
+              </div>
+              <div style="font-size: 13px; color: #334155; margin-top: 6px;">
+                🛵 <b>Dirección:</b> <span th:text="${e.direccion}"></span>
+              </div>
+              <div th:if="${e.referencia != null and not #strings.isEmpty(e.referencia)}"
+                   style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                <b>Ref:</b> <span th:text="${e.referencia}"></span>
+              </div>
+
+              <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #cbd5e1; font-size: 13px;">
+                Repartidor: <b style="color: #6d28d9;" th:text="${e.repartidor != null and not #strings.isEmpty(e.repartidor) ? e.repartidor : 'Por asignar'}"></b>
+              </div>
+            </div>
+
+            <!-- Columna 2: Platos Solicitados (con Cremas, Salsas y Notas) -->
+            <div class="info-block-box">
+              <div class="info-block-title">🍽️ Platos del Pedido</div>
+              <div th:if="${e.pedido != null and e.pedido.detallePedido != null}">
+                <div th:each="det : ${e.pedido.detallePedido}"
+                     th:if="${det.estado.name() != 'ANULADO'}"
+                     class="plate-item-row">
+                  <div>
+                    <b style="color: #1e293b;" th:text="${det.producto.nombre}">Plato</b>
+
+                    <!-- Cremas del plato -->
+                    <div th:if="${det.detallePedidoCrema != null and not #lists.isEmpty(det.detallePedidoCrema)}"
+                         style="font-size: 11px; color: #1d4ed8; font-weight: 700; margin-top: 2px;">
+                      🥣 Cremas: <span th:each="c, iter : ${det.detallePedidoCrema}" th:text="${c.crema.nombre + (iter.last ? '' : ', ')}"></span>
+                    </div>
+
+                    <!-- Salsas del plato -->
+                    <div th:if="${det.detallePedidoSalsa != null and not #lists.isEmpty(det.detallePedidoSalsa)}"
+                         style="font-size: 11px; color: #b91c1c; font-weight: 700; margin-top: 2px;">
+                      🌶️ Salsas: <span th:each="s, iter : ${det.detallePedidoSalsa}" th:text="${s.salsa.nombre + (iter.last ? '' : ', ')}"></span>
+                    </div>
+
+                    <!-- Nota de cocina individual -->
+                    <div th:if="${det.nota != null and not #strings.isEmpty(det.nota)}"
+                         style="font-size: 11px; color: #b45309; font-weight: 700; margin-top: 2px;">
+                      📝 <span th:text="${det.nota}"></span>
+                    </div>
+                  </div>
+
+                  <div style="font-weight: 800; color: #6d28d9; margin-left: 8px;"
+                       th:text="'S/ ' + ${#numbers.formatDecimal(det.precioActual, 1, 2)}">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Costo de Delivery y Total -->
+              <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
+                <span class="muted" style="font-size: 12px;">Costo Delivery:</span>
+                <span style="font-size: 13px; font-weight: 700;" th:text="'S/ ' + ${#numbers.formatDecimal(e.costoDelivery != null ? e.costoDelivery : 0, 1, 2)}"></span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                <b style="font-size: 14px; color: #1e293b;">Total a Cobrar:</b>
+                <b style="font-size: 18px; color: #6d28d9;" th:text="'S/ ' + ${#numbers.formatDecimal(e.pedido != null ? e.pedido.total : 0, 1, 2)}"></b>
+              </div>
+            </div>
+
+            <!-- Columna 3: Panel de Acciones Operativas para el Cajero -->
+            <div class="info-block-box" style="background: #ffffff; border-color: #cbd5e1;">
+              <div class="info-block-title">⚡ Acciones de Despacho</div>
+
+              <!-- CASO 1: PENDIENTE DE PAGO -->
+              <div th:if="${e.estado.name() == 'PENDIENTE_PAGO'}">
+                <div style="background: #fffbeb; border: 1px dashed #f59e0b; padding: 10px; border-radius: 12px; margin-bottom: 12px; font-size: 12px; color: #92400e;">
+                  ⏳ Esperando transferencia del cliente por <b><span th:text="${e.metodoPago}"></span></b>.
+                  La cocina no preparará hasta confirmar el pago.
+                </div>
+
+                <!-- Botón Confirmar Pago y Enviar a Cocina -->
+                <button type="button" class="btn btn-primary"
+                        style="width: 100%; margin-bottom: 8px; font-size: 13px; font-weight: 800;"
+                        th:data-id="${e.idDelivery}"
+                        th:data-codigo="${e.pedido != null ? e.pedido.codigo : ''}"
+                        th:data-cliente="${e.pedido != null and e.pedido.cliente != null ? e.pedido.cliente.nombre : ''}"
+                        th:data-total="${e.pedido != null ? #numbers.formatDecimal(e.pedido.total, 1, 2) : '0.00'}"
+                        th:data-metodo="${e.metodoPago}"
+                        th:data-operacion="${e.numeroOperacion}"
+                        onclick="abrirModalConfirmarPago(this)">
+                  💳 Confirmar Pago y Enviar a Cocina
+                </button>
+
+                <!-- Botón Anular si no paga en tiempo prudente -->
+                <form th:action="@{'/delivery/' + ${e.idDelivery} + '/anular'}" method="post"
+                      onsubmit="return confirm('¿Está seguro de anular este pedido por falta de pago? Se liberará el stock.');">
+                  <input type="hidden" name="motivo" value="No se confirmó el pago en tiempo prudente">
+                  <button type="submit" class="btn btn-soft" style="width: 100%; color: #dc2626; border-color: #fca5a5; font-size: 12px;">
+                    ✕ Anular por Falta de Pago
+                  </button>
+                </form>
+              </div>
+
+              <!-- CASO 2: EN COCINA / EN PREPARACIÓN -->
+              <div th:if="${e.estado.name() == 'EN_PREPARACION'}">
+                <div style="background: #eff6ff; border: 1px dashed #93c5fd; padding: 10px; border-radius: 12px; margin-bottom: 12px; font-size: 12px; color: #1e40af;">
+                  🍳 <b>Comanda en Cocina.</b> Los cocineros están preparando los platos.
+                </div>
+
+                <form th:action="@{'/delivery/' + ${e.idDelivery} + '/marcar-listo'}" method="post">
+                  <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 13px; font-weight: 800; background: #10b981; border-color: #059669;">
+                    📦 Marcar Platos Listos en Barra
+                  </button>
+                </form>
+
+                <div class="muted" style="font-size: 11px; margin-top: 8px; text-align: center;">
+                  (O se actualizará automáticamente cuando cocina complete los tickets)
+                </div>
+              </div>
+
+              <!-- CASO 3: LISTO EN BARRA (Listo para entregar a repartidor) -->
+              <div th:if="${e.estado.name() == 'LISTO'}">
+                <div style="background: #f0fdf4; border: 1px dashed #86efac; padding: 10px; border-radius: 12px; margin-bottom: 12px; font-size: 12px; color: #166534;">
+                  🔔 <b>¡Platos Listos!</b> Verifica cremas, salsas y empaque antes de entregar al repartidor.
+                </div>
+
+                <form th:action="@{'/delivery/' + ${e.idDelivery} + '/despachar'}" method="post">
+                  <div style="margin-bottom: 8px;">
+                    <label class="form-label" style="font-size: 11px;">Asignar Repartidor:</label>
+                    <input class="form-control" type="text" name="repartidor"
+                           placeholder="Ej: Moto 1, Repartidor Carlos, PedidosYa"
+                           th:value="${e.repartidor != null and not #strings.isEmpty(e.repartidor) and e.repartidor != 'Por asignar' ? e.repartidor : ''}" required>
+                  </div>
+                  <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 14px; font-weight: 800;">
+                    🛵 Despachar (Entregar a Repartidor)
+                  </button>
+                </form>
+              </div>
+
+              <!-- CASO 4: EN CAMINO -->
+              <div th:if="${e.estado.name() == 'EN_CAMINO'}">
+                <div style="background: #faf5ff; border: 1px dashed #d8b4fe; padding: 10px; border-radius: 12px; margin-bottom: 12px; font-size: 12px; color: #6b21a8;">
+                  🛵 <b>En ruta hacia la dirección del cliente.</b><br>
+                  Repartidor: <b th:text="${e.repartidor}"></b>
+                </div>
+
+                <form th:action="@{'/delivery/' + ${e.idDelivery} + '/marcar-entregado'}" method="post"
+                      onsubmit="return confirm('¿Confirmar que el repartidor entregó el pedido al cliente?');">
+                  <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 13px; font-weight: 800; background: #15803d; border-color: #166534;">
+                    ✅ Marcar como Entregado
+                  </button>
+                </form>
+              </div>
+
+              <!-- CASO 5: ENTREGADO -->
+              <div th:if="${e.estado.name() == 'ENTREGADO'}">
+                <div style="padding: 10px; text-align: center; color: #16a34a; font-weight: 800; font-size: 13px;">
+                  ✨ Pedido Entregado con Éxito
+                </div>
+                <div class="muted" style="font-size: 11px; text-align: center;"
+                     th:if="${e.fechaEntrega != null}"
+                     th:text="'Hora entrega: ' + ${#temporals.format(e.fechaEntrega, 'dd/MM/yyyy HH:mm')}"></div>
+              </div>
+
+              <!-- CASO 6: ANULADO -->
+              <div th:if="${e.estado.name() == 'ANULADO'}">
+                <div style="padding: 10px; text-align: center; color: #dc2626; font-weight: 800; font-size: 13px;">
+                  ❌ Pedido Anulado
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ========================================================= -->
+<!-- MODAL FLOTANTE DE CONFIRMACIÓN DE PAGO (YAPE / PLIN) -->
+<!-- ========================================================= -->
+<div class="modal-backdrop" id="modalConfirmarPago">
+  <div class="modal-card">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+      <div>
+        <div style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #7c3aed;">VERIFICACIÓN DE COBRO</div>
+        <h3 id="modalPagoCodigo" style="margin: 2px 0 0; font-size: 19px; color: #1e293b;">Confirmar Pago</h3>
+        <div class="muted" style="font-size: 13px;" id="modalPagoCliente">Cliente</div>
+      </div>
+      <button type="button" class="btn btn-soft btn-sm" onclick="cerrarModalConfirmarPago()" style="border-radius: 999px; width: 32px; height: 32px; padding: 0;">✕</button>
+    </div>
+
+    <form id="formConfirmarPagoAction" method="post">
+      <div style="background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 14px; padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 700; color: #5b21b6;">Total a Cobrar:</span>
+        <b style="font-size: 20px; color: #6d28d9;" id="modalPagoTotal">S/ 0.00</b>
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <label class="form-label">Método / Billetera Utilizada *</label>
+        <select class="form-control" name="idMetodoPago" id="modalSelectMetodoPago" required>
+          <option th:each="mp : ${metodosPago}"
+                  th:value="${mp.idMetodoPago}"
+                  th:text="${mp.nombre}"
+                  th:selected="${#strings.containsIgnoreCase(mp.nombre, 'YAPE')}">
+          </option>
+          <option th:if="${metodosPago == null or #lists.isEmpty(metodosPago)}" value="1">YAPE</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label class="form-label">N° de Operación / Referencia de Pago *</label>
+        <input class="form-control" type="text" name="numeroOperacion" id="modalInputOperacion"
+               placeholder="Ej: 19283746 ó 'Captura confirmada'" required>
+        <small class="muted">Ingresa el código que figura en la constancia de Yape o Plin.</small>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-soft" onclick="cerrarModalConfirmarPago()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" style="font-weight: 800;">
+          💳 Confirmar Pago y Enviar a Cocina
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function abrirModalConfirmarPago(btn) {
+    const id = btn.dataset.id;
+    const codigo = btn.dataset.codigo;
+    const cliente = btn.dataset.cliente;
+    const total = btn.dataset.total;
+    const metodo = btn.dataset.metodo || 'YAPE';
+    const operacion = btn.dataset.operacion || '';
+
+    document.getElementById('modalPagoCodigo').textContent = 'Confirmar Pago: ' + codigo;
+    document.getElementById('modalPagoCliente').textContent = 'Cliente: ' + cliente;
+    const sel = document.getElementById('modalSelectMetodoPago');
+    if (sel && metodo) {
+      for (let i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].text.toUpperCase().includes(metodo.toUpperCase()) || sel.options[i].value === metodo) {
+          sel.selectedIndex = i;
+          break;
+        }
+      }
+    }
+    document.getElementById('modalInputOperacion').value = operacion;
+
+    document.getElementById('formConfirmarPagoAction').action = '/delivery/' + id + '/confirmar-pago';
+    document.getElementById('modalConfirmarPago').classList.add('open');
+  }
+
+  function cerrarModalConfirmarPago() {
+    document.getElementById('modalConfirmarPago').classList.remove('open');
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mantenimiento de Mesas · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px;">
+        <div>
+          <div class="eyebrow">Configuración y Administración</div>
+          <h1 class="page-title">Mantenimiento de Mesas</h1>
+          <p class="muted">Configuración física de las mesas del restaurante: capacidad, salón y activación.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <a class="btn btn-soft" th:href="@{/salon}">▦ Ver Plano del Salón</a>
+          <a class="btn btn-primary" th:href="@{/mesas/create}">+ Nueva Mesa</a>
+        </div>
+      </div>
+
+      <!-- Tabla detallada de gestión de mesas -->
+      <div class="card">
+        <div class="section-head">
+          <h3 style="margin: 0;">Directorio de Mesas Registradas</h3>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Número</th>
+                <th>Salón / Ubicación</th>
+                <th>Capacidad</th>
+                <th>Estado Operativo</th>
+                <th>Activo</th>
+                <th style="text-align: right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="m : ${mesas}">
+                <td th:text="${m.idMesa}"></td>
+                <td><b style="font-size: 16px;" th:text="'Mesa #' + ${m.numero}"></b></td>
+                <td th:text="${m.salon != null ? m.salon : 'Salón Principal'}"></td>
+                <td th:text="${m.capacidad} + ' personas'"></td>
+                <td>
+                  <span th:class="${m.estado.name() == 'LIBRE' ? 'badge badge-ok' : (m.estado.name() == 'OCUPADA' ? 'badge badge-bad' : 'badge badge-warn')}"
+                        th:text="${m.estado}"></span>
+                </td>
+                <td>
+                  <span th:class="${'badge ' + (m.activo ? 'badge-ok' : 'badge-bad')}"
+                        th:text="${m.activo ? 'ACTIVO' : 'INACTIVO'}"></span>
+                </td>
+                <td class="actions" style="justify-content: flex-end;">
+                  <!-- Editar: no permitido si la mesa está OCUPADA -->
+                  <a th:if="${m.estado.name() != 'OCUPADA'}" class="btn btn-soft btn-sm" th:href="@{'/mesas/edit/' + ${m.idMesa}}">Editar</a>
+                  <button th:if="${m.estado.name() == 'OCUPADA'}" type="button" class="btn btn-soft btn-sm" disabled style="opacity: 0.45; cursor: not-allowed;" title="La mesa está en atención (OCUPADA) y no puede editarse">Editar</button>
+
+                  <!-- Desactivar / Activar (Borrado lógico): solo se desactiva si está LIBRE -->
+                  <th:block th:if="${m.activo}">
+                    <a th:if="${m.estado.name() == 'LIBRE'}"
+                       class="btn btn-sm btn-soft"
+                       th:href="@{'/mesas/delete/' + ${m.idMesa}}"
+                       onclick="return confirm('¿Confirma desactivar esta mesa? Ya no estará disponible para tomar pedidos.');">Desactivar</a>
+                    <button th:if="${m.estado.name() != 'LIBRE'}"
+                            type="button"
+                            class="btn btn-sm btn-soft"
+                            disabled
+                            style="opacity: 0.45; cursor: not-allowed;"
+                            title="Solo se puede desactivar una mesa cuando su estado sea LIBRE">Desactivar</button>
+                  </th:block>
+
+                  <th:block th:if="${!m.activo}">
+                    <a class="btn btn-sm btn-secondary"
+                       th:href="@{'/mesas/delete/' + ${m.idMesa}}"
+                       onclick="return confirm('¿Confirma activar nuevamente esta mesa?');">Activar</a>
+                  </th:block>
+                </td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(mesas)}">
+                <td colspan="7" class="muted" style="text-align: center; padding: 25px;">No hay mesas registradas en el sistema.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

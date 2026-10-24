@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clientes · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header">
+        <div>
+          <div class="eyebrow">Directorio</div>
+          <h2>Clientes Frecuentes</h2>
+          <p class="muted">Agiliza la toma de pedidos delivery con datos ya registrados.</p>
+        </div>
+        <div>
+          <a class="btn btn-primary" th:href="@{/clientes/create}">+ Nuevo Cliente</a>
+        </div>
+      </div>
+
+      <!-- Buscador -->
+      <form method="get" th:action="@{/clientes}" class="card" style="margin-bottom: 20px; display: flex; gap: 10px; max-width: 600px;">
+        <input class="form-control" name="q" th:value="${q}" placeholder="Buscar por nombre o número de teléfono...">
+        <button class="btn btn-soft">Buscar</button>
+        <a class="btn btn-soft" th:if="${q != null and !q.isBlank()}" th:href="@{/clientes}">Limpiar</a>
+      </form>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Teléfono</th>
+                <th>Dirección</th>
+                <th>Estado</th>
+                <th style="text-align: right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="c : ${clientes}">
+                <td th:text="${c.idCliente}"></td>
+                <td><b th:text="${c.nombre}"></b></td>
+                <td th:text="${c.telefono != null ? c.telefono : '-'}"></td>
+                <td th:text="${c.direccion != null ? c.direccion : '-'}"></td>
+                <td>
+                  <span th:class="${'badge ' + (c.estado ? 'badge-ok' : 'badge-bad')}"
+                        th:text="${c.estado ? 'ACTIVO' : 'INACTIVO'}"></span>
+                </td>
+                <td class="actions" style="justify-content: flex-end;">
+                  <a class="btn btn-soft btn-sm" th:href="@{'/clientes/edit/' + ${c.idCliente}}">Editar</a>
+                  <a class="btn btn-sm" th:classappend="${c.estado ? 'btn-danger' : 'btn-secondary'}"
+                     th:href="@{'/clientes/delete/' + ${c.idCliente}}"
+                     th:text="${c.estado ? 'Desactivar' : 'Activar'}"
+                     onclick="return confirm('¿Desea cambiar el estado de este cliente?');"></a>
+                </td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(clientes)}">
+                <td colspan="6" class="muted" style="text-align: center; padding: 25px;">No hay clientes registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

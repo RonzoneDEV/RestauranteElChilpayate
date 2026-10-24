@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Carrito Delivery · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css(v='3.2')}">
+  <style>
+    :root {
+      --del-primary: #7c3aed;
+      --del-primary-hover: #6d28d9;
+      --del-primary-light: #ede9fe;
+      --del-accent: #f59e0b;
+      --del-border: #e2e8f0;
+      --del-bg: #f8fafc;
+    }
+
+    .delivery-cart-layout {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 24px;
+      align-items: start;
+      margin-top: 20px;
+    }
+
+    .top-info-banner {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.05);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    /* Tarjetas de platos individuales */
+    .cart-plate-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+      transition: all 0.2s ease;
+    }
+    .cart-plate-card:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+    }
+
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .item-cat {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: #7c3aed;
+    }
+    .item-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #1e293b;
+      margin-top: 2px;
+    }
+    .item-price {
+      font-size: 19px;
+      font-weight: 900;
+      color: #6d28d9;
+    }
+
+    /* Chips de cremas y salsas */
+    .crema-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      margin-top: 6px;
+      margin-right: 6px;
+    }
+    .salsa-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+      margin-top: 6px;
+      margin-right: 6px;
+    }
+
+    /* Formulario de Notas por plato */
+    .note-form-section {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-top: 12px;
+    }
+    .preset-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .preset-chip {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s;
+      font-weight: 600;
+      color: #475569;
+    }
+    .preset-chip:hover {
+      background: #ede9fe;
+      border-color: #8b5cf6;
+      color: #6d28d9;
+    }
+
+    .note-input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .note-input {
+      flex: 1;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 13px;
+      background: #ffffff;
+      outline: none;
+      transition: border 0.15s, box-shadow 0.15s;
+    }
+    .note-input:focus {
+      border-color: #7c3aed;
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+    }
+
+    .btn-trash {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #ef4444;
+      border-radius: 10px;
+      padding: 6px 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      transition: all 0.15s;
+    }
+    .btn-trash:hover {
+      background: #fee2e2;
+      color: #dc2626;
+      border-color: #f87171;
+    }
+
+    /* Panel lateral de Checkout y Despacho */
+    .checkout-card {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+      position: sticky;
+      top: 90px;
+    }
+    .checkout-section-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #5b21b6;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px dashed #f1f5f9;
+      font-size: 14px;
+    }
+    .summary-row.total-main {
+      border-bottom: none;
+      border-top: 2px solid #e2e8f0;
+      margin-top: 12px;
+      padding-top: 16px;
+    }
+    .summary-row.total-main .val {
+      font-size: 26px;
+      font-weight: 900;
+      color: #6d28d9;
+    }
+
+    /* Buscador dinámico de clientes */
+    .client-search-box {
+      position: relative;
+      margin-bottom: 14px;
+    }
+    .client-search-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .client-search-icon {
+      position: absolute;
+      left: 12px;
+      font-size: 14px;
+      color: #94a3b8;
+      pointer-events: none;
+    }
+    .client-search-input {
+      padding-left: 36px !important;
+      padding-right: 32px !important;
+      font-size: 13px !important;
+      border-color: #cbd5e1 !important;
+      background: #f8fafc;
+      transition: all 0.2s ease;
+    }
+    .client-search-input:focus {
+      background: #ffffff;
+      border-color: #7c3aed !important;
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15) !important;
+    }
+    .client-clear-btn {
+      position: absolute;
+      right: 10px;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 15px;
+      padding: 4px;
+      line-height: 1;
+    }
+    .client-clear-btn:hover {
+      color: #ef4444;
+    }
+    .client-search-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 12px;
+      box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.15), 0 6px 12px -4px rgba(0, 0, 0, 0.08);
+      max-height: 250px;
+      overflow-y: auto;
+      z-index: 1050;
+    }
+    .client-dropdown-item {
+      padding: 10px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      cursor: pointer;
+      transition: background 0.12s ease;
+    }
+    .client-dropdown-item:last-child {
+      border-bottom: none;
+    }
+    .client-dropdown-item:hover {
+      background: #ede9fe;
+    }
+    .client-item-name {
+      font-weight: 800;
+      color: #1e1b4b;
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+    .client-item-meta {
+      font-size: 11.5px;
+      color: #64748b;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .client-dropdown-empty {
+      padding: 14px;
+      text-align: center;
+      color: #64748b;
+      font-size: 12px;
+    }
+    .badge-client-loaded {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .quick-delivery-chips {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .delivery-chip-btn {
+      flex: 1;
+      padding: 6px 4px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .delivery-chip-btn:hover {
+      background: #ede9fe;
+      border-color: #8b5cf6;
+      color: #6d28d9;
+    }
+
+    @media (max-width: 1024px) {
+      .delivery-cart-layout {
+        grid-template-columns: 1fr;
+      }
+      .checkout-card {
+        position: relative;
+        top: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content" style="max-width: 1440px;">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <!-- Barra Superior de Información y Cancelación -->
+      <div class="top-info-banner">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <a class="btn btn-soft btn-sm" th:href="@{/delivery/create}">← Volver a la Carta Delivery</a>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <b style="font-size: 22px; color: #5b21b6;">🛒 Carrito de Pedido Delivery</b>
+              <span class="badge" style="background: #ede9fe; color: #6d28d9; font-weight: 800;">Despacho a Domicilio</span>
+            </div>
+            <small class="muted">
+              Revisa los platos seleccionados, añade notas de cocina específicas para cada uno y completa los datos de entrega.
+            </small>
+          </div>
+        </div>
+
+        <div>
+          <!-- Cancelar Pedido Delivery -->
+          <a th:href="@{/delivery/carrito/cancelar}"
+             onclick="return confirm('¿Está seguro de cancelar el pedido delivery? Se vaciará el carrito.');"
+             class="btn btn-soft btn-sm" style="color: #ef4444; border: 1px solid #fca5a5;">
+            ✕ Cancelar y Salir
+          </a>
+        </div>
+      </div>
+
+      <!-- Layout Principal del Carrito Delivery -->
+      <div class="delivery-cart-layout">
+
+        <!-- Columna Izquierda: Platos seleccionados uno a uno -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+              <span>🍽️ Platos en el Carrito Delivery</span>
+              <span class="badge" style="background: #ede9fe; color: #6d28d9; font-weight: 800;" th:text="${carrito.cantidadTotal} + ' platos'"></span>
+            </h3>
+            <a class="btn btn-soft btn-sm" th:href="@{/delivery/create}">+ Agregar otro plato</a>
+          </div>
+
+          <!-- Si el carrito está vacío -->
+          <div th:if="${carrito.estaVacio()}"
+               class="card" style="text-align: center; padding: 48px 20px; border: 2px dashed #cbd5e1; border-radius: 18px; background: #fafafa;">
+            <div style="font-size: 48px; margin-bottom: 12px;">🛒</div>
+            <h3 style="margin: 0 0 6px; color: #334155;">El pedido delivery está vacío</h3>
+            <p class="muted" style="margin: 0 0 20px; font-size: 14px;">
+              Aún no has agregado ningún plato para este envío a domicilio.
+            </p>
+            <a class="btn btn-primary" th:href="@{/delivery/create}" style="padding: 12px 24px; font-size: 15px;">
+              🍽️ Ir a la Carta Delivery
+            </a>
+          </div>
+
+          <!-- Lista de platos uno a uno con sus cremas, salsas y notas individuales -->
+          <div th:if="${not carrito.estaVacio()}">
+            <div th:each="item, iterStat : ${carrito.items}" class="cart-plate-card">
+              <div class="item-header">
+                <div>
+                  <div class="item-cat" th:text="'Plato #' + ${iterStat.count} + ' · ' + ${item.categoriaNombre}">Categoría</div>
+                  <div class="item-title" th:text="${item.nombreProducto}">Nombre del Plato</div>
+
+                  <!-- Cremas seleccionadas para este plato (Delivery) -->
+                  <div th:if="${item.nombresCremas != null and not #lists.isEmpty(item.nombresCremas)}">
+                    <span th:each="c : ${item.nombresCremas}" class="crema-chip" th:text="'🥣 ' + ${c}"></span>
+                  </div>
+
+                  <!-- Salsas seleccionadas para este plato -->
+                  <div th:if="${item.nombresSalsas != null and not #lists.isEmpty(item.nombresSalsas)}">
+                    <span th:each="s : ${item.nombresSalsas}" class="salsa-chip" th:text="'🌶️ ' + ${s}"></span>
+                  </div>
+                </div>
+
+                <div style="text-align: right;">
+                  <div class="item-price" th:text="'S/ ' + ${#numbers.formatDecimal(item.precioUnitario, 1, 2)}">S/ 0.00</div>
+                  <form th:action="@{'/delivery/cart/' + ${item.idItem} + '/eliminar'}" method="post" style="margin-top: 8px;">
+                    <button type="submit" class="btn-trash" title="Quitar este plato">🗑️ Quitar</button>
+                  </form>
+                </div>
+              </div>
+
+              <!-- Formulario de Nota de Cocina para este plato individual -->
+              <div class="note-form-section">
+                <div style="font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 6px;">
+                  📝 Nota de cocina para este plato:
+                </div>
+
+                <!-- Chips predefinidos rápidos -->
+                <div class="preset-chips">
+                  <span class="preset-chip" th:data-id="${item.idItem}" onclick="aplicarPreset(this.dataset.id, 'Papas bien crocantes')">🍟 Papas crocantes</span>
+                  <span class="preset-chip" th:data-id="${item.idItem}" onclick="aplicarPreset(this.dataset.id, 'Bien cocido / dorado')">🔥 Bien cocido</span>
+                  <span class="preset-chip" th:data-id="${item.idItem}" onclick="aplicarPreset(this.dataset.id, 'Sin ensalada')">🥗 Sin ensalada</span>
+                  <span class="preset-chip" th:data-id="${item.idItem}" onclick="aplicarPreset(this.dataset.id, 'Empaque separado')">📦 Empaque separado</span>
+                  <span class="preset-chip" th:data-id="${item.idItem}" onclick="aplicarPreset(this.dataset.id, 'Poca sal')">🧂 Poca sal</span>
+                </div>
+
+                <div class="note-input-row">
+                  <input type="text"
+                         th:id="'nota-input-' + ${item.idItem}"
+                         class="note-input"
+                         placeholder="Ej: papas bien doradas, ensalada en bolsa aparte..."
+                         th:value="${item.nota}"
+                         th:data-id="${item.idItem}"
+                         onchange="guardarNotaAjax(this.dataset.id, this.value)">
+                  <span th:id="'nota-saved-' + ${item.idItem}"
+                        style="font-size: 11px; font-weight: 700; color: #16a34a; display: none;">
+                    ✓ Guardado
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna Derecha: Formulario de Despacho, Cliente y Confirmación -->
+        <div>
+          <div class="checkout-card">
+            <form th:action="@{/delivery/carrito/confirmar}" method="post" id="formConfirmarDelivery">
+
+              <div class="checkout-section-title">
+                <span>📍</span> Datos del Cliente y Entrega
+              </div>
+
+              <!-- BUSCADOR INTELIGENTE DE CLIENTES (AUTOCOMPLETADO EN TIEMPO REAL) -->
+              <div class="client-search-box" id="clientSearchContainer">
+                <label class="form-label" style="font-weight: 800; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span>🔍 Buscar Cliente</span>
+                  <span id="badgeClienteCargado" class="badge-client-loaded" style="display: none;">
+                    ✓ Cliente Cargado
+                  </span>
+                </label>
+                <div class="client-search-input-wrap">
+                  <span class="client-search-icon">🔎</span>
+                  <input type="text" class="form-control client-search-input" id="inputBuscarCliente"
+                         placeholder="Escribe nombre o teléfono para buscar..."
+                         autocomplete="off"
+                         oninput="onInputBuscarCliente(this.value)"
+                         onfocus="onFocusBuscarCliente()">
+                  <button type="button" class="client-clear-btn" id="btnLimpiarCliente" onclick="limpiarFormularioCliente()" style="display: none;" title="Limpiar y crear cliente nuevo">
+                    ✕
+                  </button>
+                </div>
+
+                <!-- Dropdown de sugerencias de clientes coincidentes -->
+                <div id="dropdownClientes" class="client-search-dropdown" style="display: none;"></div>
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <label class="form-label">Teléfono / WhatsApp *</label>
+                <input class="form-control" type="text" name="telefono" id="inputTelefono"
+                       placeholder="Ej: 987654321" th:value="${carrito.telefono}" required
+                       onblur="autoBuscarPorTelefonoSiVacio(this.value)">
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <label class="form-label">Nombre del Cliente *</label>
+                <input class="form-control" type="text" name="nombreCliente" id="inputNombre"
+                       placeholder="Ej: Carlos Mendoza" th:value="${carrito.nombreCliente}" required>
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <label class="form-label">Dirección de Entrega *</label>
+                <input class="form-control" type="text" name="direccion" id="inputDireccion"
+                       placeholder="Ej: Av. Las Palmeras 450, Dpto 302" th:value="${carrito.direccion}" required>
+              </div>
+
+              <div style="margin-bottom: 16px;">
+                <label class="form-label">Referencia de Entrega (Opcional)</label>
+                <input class="form-control" type="text" name="referencia" id="inputReferencia"
+                       placeholder="Ej: Frente al parque, rejas blancas" th:value="${carrito.referencia}">
+              </div>
+
+              <div class="checkout-section-title" style="margin-top: 18px;">
+                <span>🛵</span> Costo de Envío y Repartidor
+              </div>
+
+              <div style="margin-bottom: 14px;">
+                <label class="form-label">Costo de Envío (S/)</label>
+                <input class="form-control" type="number" step="0.50" min="0" name="costoDelivery" id="inputCostoDelivery"
+                       th:value="${carrito.costoDelivery != null ? #numbers.formatDecimal(carrito.costoDelivery, 1, 2) : '5.00'}"
+                       onchange="actualizarTotalFinanciero()" onkeyup="actualizarTotalFinanciero()" required>
+
+                <div class="quick-delivery-chips">
+                  <span class="delivery-chip-btn" onclick="setCostoDelivery(0)">Gratis</span>
+                  <span class="delivery-chip-btn" onclick="setCostoDelivery(3)">S/ 3.00</span>
+                  <span class="delivery-chip-btn" onclick="setCostoDelivery(5)">S/ 5.00</span>
+                  <span class="delivery-chip-btn" onclick="setCostoDelivery(8)">S/ 8.00</span>
+                </div>
+              </div>
+
+              <div style="margin-bottom: 18px;">
+                <label class="form-label">Repartidor Asignado</label>
+                <input class="form-control" type="text" name="repartidor" id="inputRepartidor"
+                       placeholder="Ej: Moto 1, Repartidor Juan, etc."
+                       th:value="${carrito.repartidor != null ? carrito.repartidor : 'Por asignar'}">
+                <div class="quick-delivery-chips">
+                  <span class="delivery-chip-btn" onclick="setRepartidor('Por asignar')">Por asignar</span>
+                  <span class="delivery-chip-btn" onclick="setRepartidor('Moto 1')">Moto 1</span>
+                  <span class="delivery-chip-btn" onclick="setRepartidor('Moto 2')">Moto 2</span>
+                  <span class="delivery-chip-btn" onclick="setRepartidor('PedidosYa')">PedidosYa</span>
+                </div>
+              </div>
+
+              <!-- Cobro por Adelantado (Billetera Digital / Pre-pago) -->
+              <div class="checkout-section-title" style="margin-top: 18px;">
+                <span>💳</span> Cobro por Adelantado (Billetera Digital)
+              </div>
+
+              <div style="background: #faf5ff; border: 1.5px solid #d8b4fe; border-radius: 16px; padding: 14px 16px; margin-bottom: 18px;">
+                <label class="form-label" style="color: #5b21b6; font-weight: 800; font-size: 13px;">Confirmación de Pago del Delivery *</label>
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
+                  <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; font-weight: 700; color: #1e293b; cursor: pointer; background: #ffffff; padding: 10px 12px; border-radius: 10px; border: 1px solid #cbd5e1;">
+                    <input type="radio" name="confirmarPagoAhora" value="true" checked onchange="togglePagoTexto(true)" style="margin-top: 3px;">
+                    <div>
+                      <span>✅ Pago confirmado ahora (Enviar comanda a Cocina)</span>
+                      <small class="muted" style="display: block; font-weight: normal; font-size: 11px; margin-top: 2px;">
+                        El cliente ya envió la captura de Yape/Plin o transfirió. La cocina comenzará a cocinar de inmediato.
+                      </small>
+                    </div>
+                  </label>
+                  <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; font-weight: 700; color: #92400e; cursor: pointer; background: #fffbeb; padding: 10px 12px; border-radius: 10px; border: 1px solid #fde68a;">
+                    <input type="radio" name="confirmarPagoAhora" value="false" onchange="togglePagoTexto(false)" style="margin-top: 3px;">
+                    <div>
+                      <span>⏳ Guardar en Espera de Pago (Sin enviar a cocina aún)</span>
+                      <small class="muted" style="display: block; font-weight: normal; font-size: 11px; margin-top: 2px;">
+                        El cliente está por transferir. Podrás confirmar el pago en la lista o anular si no paga en tiempo prudente.
+                      </small>
+                    </div>
+                  </label>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                  <label class="form-label">Billetera / Método de Pago *</label>
+                  <select class="form-control" name="idMetodoPago" id="selectMetodoPago" required>
+                    <option th:each="mp : ${metodosPago}"
+                            th:value="${mp.idMetodoPago}"
+                            th:text="${mp.nombre}"
+                            th:selected="${#strings.containsIgnoreCase(mp.nombre, 'YAPE')}">
+                    </option>
+                    <!-- Fallback estático si no hubiera cargado -->
+                    <option th:if="${metodosPago == null or #lists.isEmpty(metodosPago)}" value="1">YAPE</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="form-label">N° de Operación / Referencia de Pago</label>
+                  <input class="form-control" type="text" name="numeroOperacion" id="inputNumOperacion"
+                         placeholder="Ej: 19827365 ó 'Captura WhatsApp verificada'">
+                </div>
+              </div>
+
+              <!-- Desglose de Parámetros Proporcionales de la Carta -->
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px 14px; margin-bottom: 16px; font-size: 12px;">
+                <div style="font-weight: 800; color: #334155; margin-bottom: 6px; display:flex; justify-content:space-between; align-items:center;">
+                  <span>⚙️ Control de Carta Delivery</span>
+                  <a th:href="@{/parametros-carta}" style="color: #6d28d9; text-decoration: none; font-size: 11px; font-weight:700;">Configurar ↗</a>
+                </div>
+
+                <!-- Fila Alitas y Salsas Extras -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                  <span>🍗 Alitas: <b th:text="${totalAlitas}">0</b></span>
+                  <span>🌶️ Salsas:
+                    <b th:text="${totalExtrasSalsas} + ' / ' + ${maxSalsasPermitidas}">0 / 0</b>
+                    <span th:if="${excesoSalsas > 0}" class="badge badge-bad" style="padding: 1px 5px; font-size: 10px;" th:text="'+' + ${excesoSalsas} + ' exceso'"></span>
+                    <span th:unless="${excesoSalsas > 0}" class="badge badge-ok" style="padding: 1px 5px; font-size: 10px;">OK</span>
+                  </span>
+                </div>
+
+                <!-- Fila Principales y Adicionales -->
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span>🍽️ Principales: <b th:text="${totalPrincipales}">0</b></span>
+                  <span>🍟 Adicionales:
+                    <b th:text="${totalAdicionales} + ' / ' + ${maxAdicionalesPermitidos}">0 / 0</b>
+                    <span th:if="${excesoAdicionales > 0}" class="badge badge-bad" style="padding: 1px 5px; font-size: 10px;" th:text="'+' + ${excesoAdicionales} + ' exceso'"></span>
+                    <span th:unless="${excesoAdicionales > 0}" class="badge badge-ok" style="padding: 1px 5px; font-size: 10px;">OK</span>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Resumen Económico -->
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 14px 16px; margin-bottom: 20px;">
+                <div class="summary-row">
+                  <span class="muted">Subtotal Platos:</span>
+                  <b id="summarySubtotal" th:text="'S/ ' + ${#numbers.formatDecimal(carrito.subtotal, 1, 2)}">S/ 0.00</b>
+                </div>
+                <div class="summary-row">
+                  <span class="muted">Costo Delivery:</span>
+                  <b id="summaryCostoDelivery" th:text="'S/ ' + ${#numbers.formatDecimal(carrito.costoDelivery, 1, 2)}">S/ 5.00</b>
+                </div>
+                <div class="summary-row total-main">
+                  <span>Total Pedido:</span>
+                  <span class="val" id="summaryTotal" th:text="'S/ ' + ${#numbers.formatDecimal(carrito.total, 1, 2)}">S/ 0.00</span>
+                </div>
+              </div>
+
+              <!-- Alerta de Exceso de Salsas -->
+              <div th:if="${excesoSalsas > 0}"
+                   style="background: #fef2f2; border: 1.5px solid #ef4444; color: #991b1b; padding: 12px; border-radius: 12px; font-size: 12px; line-height: 1.4; margin-bottom: 12px;">
+                <b style="display: block; font-size: 13px; margin-bottom: 2px;">⚠️ Exceso de Salsas/Extras (<span th:text="${excesoSalsas}"></span> de más):</b>
+                Tienes <b><span th:text="${totalExtrasSalsas}"></span> salsas</b> en el pedido para <b><span th:text="${totalAlitas}"></span> porción(es) de alitas</b> (máximo permitido: <span th:text="${maxSalsasPermitidas}"></span>, a <span th:text="${maxExtrasPorAlita}"></span> salsas por alitas).
+                <div style="margin-top: 5px; font-weight: 700; color: #b91c1c;">
+                  ✕ Elimine las salsas sobrantes para poder procesar y enviar a cocina.
+                </div>
+              </div>
+
+              <!-- Alerta de Exceso de Adicionales -->
+              <div th:if="${excesoAdicionales > 0}"
+                   style="background: #fef2f2; border: 1.5px solid #ef4444; color: #991b1b; padding: 12px; border-radius: 12px; font-size: 12px; line-height: 1.4; margin-bottom: 12px;">
+                <b style="display: block; font-size: 13px; margin-bottom: 2px;">⚠️ Exceso de Adicionales (<span th:text="${excesoAdicionales}"></span> de más):</b>
+                Tienes <b><span th:text="${totalAdicionales}"></span> adicionales</b> para <b><span th:text="${totalPrincipales}"></span> plato(s) principal(es)</b> (máximo permitido: <span th:text="${maxAdicionalesPermitidos}"></span>, a <span th:text="${maxAdicionalesPorPrincipal}"></span> por plato).
+                <div style="margin-top: 5px; font-weight: 700; color: #b91c1c;">
+                  ✕ Elimine los adicionales sobrantes para poder procesar y enviar a cocina.
+                </div>
+              </div>
+
+              <!-- Alerta si hay adicionales sin plato principal -->
+              <div th:if="${tieneAdicionales == true and tienePrincipalActivo != true and excesoAdicionales <= 0}"
+                   style="background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 600; margin-bottom: 12px;">
+                ⚠️ <b>Atención:</b> Tiene adicionales en el pedido pero no ha seleccionado ningún plato principal. Agregue al menos un plato principal para poder procesar el delivery.
+              </div>
+
+              <!-- Botón Confirmar Comanda -->
+              <button type="submit" class="btn btn-primary" id="btnConfirmarPedidoSubmit"
+                      th:disabled="${carrito.estaVacio() or tieneExcesos == true or (tieneAdicionales == true and tienePrincipalActivo != true)}"
+                      th:style="${tieneExcesos ? 'width: 100%; padding: 14px; font-size: 15px; font-weight: 800; border-radius: 14px; background: #94a3b8; color: #ffffff; cursor: not-allowed;' : 'width: 100%; padding: 14px; font-size: 16px; font-weight: 800; border-radius: 14px; box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);'}">
+                <span th:if="${tieneExcesos}">🚫 Envío Bloqueado por Exceso</span>
+                <span th:unless="${tieneExcesos}">🛵 Confirmar Pago y Enviar a Cocina</span>
+              </button>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Script de búsqueda dinámica y autocompletado de clientes -->
+<script>
+  let timerBusqueda = null;
+
+  function onInputBuscarCliente(val) {
+    const q = val.trim();
+    clearTimeout(timerBusqueda);
+
+    const btnClear = document.getElementById('btnLimpiarCliente');
+    if (btnClear) btnClear.style.display = q.length > 0 ? 'block' : 'none';
+
+    if (q.length < 2) {
+      cerrarDropdownClientes();
+      return;
+    }
+
+    timerBusqueda = setTimeout(() => {
+      ejecutarBusquedaClientes(q);
+    }, 200);
+  }
+
+  function onFocusBuscarCliente() {
+    const q = document.getElementById('inputBuscarCliente').value.trim();
+    if (q.length >= 2) {
+      ejecutarBusquedaClientes(q);
+    }
+  }
+
+  function ejecutarBusquedaClientes(q) {
+    const dropdown = document.getElementById('dropdownClientes');
+    dropdown.innerHTML = '<div class="client-dropdown-empty">⏳ Buscando clientes...</div>';
+    dropdown.style.display = 'block';
+
+    fetch('/delivery/api/clientes/buscar?q=' + encodeURIComponent(q))
+      .then(res => res.json())
+      .then(lista => {
+        if (!lista || lista.length === 0) {
+          dropdown.innerHTML = '<div class="client-dropdown-empty">No se encontró ningún cliente con "<b>' + escapeHtml(q) + '</b>".<br><small style="color:#7c3aed;">Puedes ingresar los datos directamente abajo.</small></div>';
+          dropdown.style.display = 'block';
+          return;
+        }
+
+        let html = '';
+        lista.forEach(c => {
+          const nom = escapeHtml(c.nombre || '');
+          const tel = escapeHtml(c.telefono || '');
+          const dir = escapeHtml(c.direccion || '');
+          html += `
+            <div class="client-dropdown-item" onclick="seleccionarCliente('${nom.replace(/'/g, "\\'")}', '${tel.replace(/'/g, "\\'")}', '${dir.replace(/'/g, "\\'")}')">
+              <div class="client-item-name">${nom}</div>
+              <div class="client-item-meta">
+                <span>📞 ${tel || 'Sin teléfono'}</span>
+                <span>📍 ${dir || 'Sin dirección registrada'}</span>
+              </div>
+            </div>
+          `;
+        });
+        dropdown.innerHTML = html;
+        dropdown.style.display = 'block';
+      })
+      .catch(err => {
+        dropdown.innerHTML = '<div class="client-dropdown-empty" style="color: #ef4444;">Error al conectar con la búsqueda.</div>';
+      });
+  }
+
+  function seleccionarCliente(nom, tel, dir) {
+    document.getElementById('inputNombre').value = nom;
+    document.getElementById('inputTelefono').value = tel;
+    document.getElementById('inputDireccion').value = dir;
+    document.getElementById('inputBuscarCliente').value = nom;
+
+    const badge = document.getElementById('badgeClienteCargado');
+    if (badge) badge.style.display = 'inline-flex';
+
+    const btnClear = document.getElementById('btnLimpiarCliente');
+    if (btnClear) btnClear.style.display = 'block';
+
+    cerrarDropdownClientes();
+  }
+
+  function limpiarFormularioCliente() {
+    document.getElementById('inputBuscarCliente').value = '';
+    document.getElementById('inputNombre').value = '';
+    document.getElementById('inputTelefono').value = '';
+    document.getElementById('inputDireccion').value = '';
+    const ref = document.getElementById('inputReferencia');
+    if (ref) ref.value = '';
+
+    const badge = document.getElementById('badgeClienteCargado');
+    if (badge) badge.style.display = 'none';
+
+    const btnClear = document.getElementById('btnLimpiarCliente');
+    if (btnClear) btnClear.style.display = 'none';
+
+    cerrarDropdownClientes();
+    document.getElementById('inputBuscarCliente').focus();
+  }
+
+  function cerrarDropdownClientes() {
+    const dropdown = document.getElementById('dropdownClientes');
+    if (dropdown) dropdown.style.display = 'none';
+  }
+
+  function autoBuscarPorTelefonoSiVacio(tel) {
+    const t = tel.trim();
+    const nomActual = document.getElementById('inputNombre').value.trim();
+    if (!nomActual && t.length >= 7) {
+      fetch('/delivery/api/clientes/buscar?q=' + encodeURIComponent(t))
+        .then(r => r.json())
+        .then(lista => {
+          if (lista && lista.length === 1) {
+            seleccionarCliente(lista[0].nombre, lista[0].telefono, lista[0].direccion);
+          }
+        })
+        .catch(() => {});
+    }
+  }
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  // Cerrar dropdown al hacer click fuera del contenedor
+  document.addEventListener('click', function(e) {
+    const container = document.getElementById('clientSearchContainer');
+    if (container && !container.contains(e.target)) {
+      cerrarDropdownClientes();
+    }
+  });
+
+  function setCostoDelivery(monto) {
+    document.getElementById('inputCostoDelivery').value = monto.toFixed(2);
+    actualizarTotalFinanciero();
+  }
+
+  function setRepartidor(nombre) {
+    document.getElementById('inputRepartidor').value = nombre;
+  }
+
+  function actualizarTotalFinanciero() {
+    const subtotalTxt = document.getElementById('summarySubtotal').textContent.replace('S/', '').trim();
+    const subtotal = parseFloat(subtotalTxt) || 0;
+    const costoDelivery = parseFloat(document.getElementById('inputCostoDelivery').value) || 0;
+    const total = subtotal + costoDelivery;
+
+    document.getElementById('summaryCostoDelivery').textContent = 'S/ ' + costoDelivery.toFixed(2);
+    document.getElementById('summaryTotal').textContent = 'S/ ' + total.toFixed(2);
+  }
+
+  function aplicarPreset(idItem, presetText) {
+    const input = document.getElementById('nota-input-' + idItem);
+    if (!input) return;
+    if (input.value.trim().length > 0) {
+      input.value += ', ' + presetText;
+    } else {
+      input.value = presetText;
+    }
+    guardarNotaAjax(idItem, input.value);
+  }
+
+  function guardarNotaAjax(idItem, nota) {
+    const formData = new URLSearchParams();
+    formData.append('nota', nota);
+
+    fetch('/delivery/cart/' + idItem + '/nota', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: formData.toString()
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        const savedLabel = document.getElementById('nota-saved-' + idItem);
+        if (savedLabel) {
+          savedLabel.style.display = 'inline';
+          setTimeout(() => {
+            savedLabel.style.display = 'none';
+          }, 2000);
+        }
+      }
+    })
+    .catch(err => console.error(err));
+  }
+
+  function togglePagoTexto(confirmarAhora) {
+    const btn = document.getElementById('btnConfirmarPedidoSubmit');
+    if (confirmarAhora) {
+      btn.innerHTML = '🛵 Confirmar Pago y Enviar a Cocina';
+      btn.style.background = 'linear-gradient(135deg, #7c3aed, #6d28d9)';
+    } else {
+      btn.innerHTML = '⏳ Guardar Pedido en Espera de Pago';
+      btn.style.background = 'linear-gradient(135deg, #d97706, #b45309)';
+    }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Caja y Cobros · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css(v='3.2')}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header">
+        <div>
+          <div class="eyebrow">Facturación y Cobranza</div>
+          <h2>Caja y Cobros</h2>
+          <p class="muted">Procesa cobros en efectivo, Yape, Plin o tarjeta y emite comprobantes.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <a class="btn btn-secondary" th:href="@{/caja/cierre}">🧮 Cierre Diario de Caja</a>
+        </div>
+      </div>
+
+      <!-- Pedidos Pendientes de Cobro -->
+      <div class="card" style="margin-bottom: 24px;">
+        <h3 style="margin-bottom: 16px;">Comandas Pendientes de Pago</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Fecha / Hora</th>
+                <th>Tipo</th>
+                <th>Destino</th>
+                <th>Estado Comanda</th>
+                <th style="text-align: right;">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="p : ${pedidosPendientes}">
+                <td><b th:text="${p.codigo != null ? p.codigo : ('#' + p.idPedido)}"></b></td>
+                <td th:text="${#temporals.format(p.fecha, 'dd/MM HH:mm')}"></td>
+                <td>
+                  <span th:class="${p.tipo.name() == 'SALON' ? 'badge badge-ok' : 'badge badge-info'}" th:text="${p.tipo}"></span>
+                </td>
+                <td>
+                  <b th:if="${p.mesa != null}" th:text="'Mesa #' + ${p.mesa.numero}"></b>
+                  <span th:if="${p.pedidoDelivery != null}" th:text="${p.pedidoDelivery.direccion}"></span>
+                  <div th:if="${p.cliente != null}" class="muted" style="font-size: 12px;" th:text="${p.cliente.nombre}"></div>
+                </td>
+                <td>
+                  <span th:if="${p.tipo.name() == 'DELIVERY' and (p.estado.name() == 'PAGADA' or (p.pedidoDelivery != null and p.pedidoDelivery.pagado))}"
+                        class="badge badge-ok">PAGADO</span>
+                  <span th:unless="${p.tipo.name() == 'DELIVERY' and (p.estado.name() == 'PAGADA' or (p.pedidoDelivery != null and p.pedidoDelivery.pagado))}"
+                        th:class="${'badge ' + (p.estado.name() == 'PRECUENTA' ? 'badge-warning' : 'badge-info')}"
+                        th:text="${p.estado}"></span>
+                </td>
+                <td class="actions" style="justify-content: flex-end;">
+                  <a th:if="${p.estado.name() == 'PAGADA' or (p.pedidoDelivery != null and p.pedidoDelivery.pagado)}"
+                     class="btn btn-soft btn-sm" th:href="@{'/caja/comprobante/pedido/' + ${p.idPedido}}" target="_blank">
+                    📄 Ver Comprobante
+                  </a>
+                  <a th:unless="${p.estado.name() == 'PAGADA' or (p.pedidoDelivery != null and p.pedidoDelivery.pagado)}"
+                     class="btn btn-primary btn-sm" th:href="@{'/caja/pago/' + ${p.idPedido}}">
+                    💳 Cobrar pedido
+                  </a>
+                </td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(pedidosPendientes)}">
+                <td colspan="6" class="muted" style="text-align: center; padding: 24px;">No hay pedidos pendientes de cobro.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Ventas Cobradas Hoy -->
+      <div class="card">
+        <h3 style="margin-bottom: 16px;">Ventas y Comprobantes de Hoy</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>N° Comprobante</th>
+                <th>Tipo</th>
+                <th>Hora</th>
+                <th>Pedido</th>
+                <th>Cajero</th>
+                <th>Total</th>
+                <th style="text-align: right;">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="v : ${ventasHoy}">
+                <td><b th:text="${v.numeroComprobante}"></b></td>
+                <td><span class="badge badge-info" th:text="${v.tipoComprobante}"></span></td>
+                <td th:text="${#temporals.format(v.fechaHora, 'HH:mm:ss')}"></td>
+                <td>
+                  <span th:if="${v.pedido != null}" th:text="${v.pedido.codigo}"></span>
+                </td>
+                <td th:text="${v.usuario != null ? v.usuario.nombres : '-'}"></td>
+                <td style="font-weight: 800; color: #0f172a;" th:text="'S/ ' + ${#numbers.formatDecimal(v.total, 1, 2)}"></td>
+                <td class="actions" style="justify-content: flex-end;">
+                  <a class="btn btn-soft btn-sm" th:href="@{'/caja/comprobante/' + ${v.idVenta}}" target="_blank" style="font-weight: 700; gap: 4px;">
+                    📄 Ver Comprobante
+                  </a>
+                </td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(ventasHoy)}">
+                <td colspan="7" class="muted" style="text-align: center; padding: 24px;">Aún no se han registrado cobros el día de hoy.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

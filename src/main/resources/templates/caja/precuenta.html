@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="'Precuenta · Mesa ' + (${mesa != null ? mesa.numero : 'Delivery'}) + ' · El Chilpayate'"></title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+  <style>
+    .precuenta-header-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 22px 26px;
+      margin-bottom: 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.03);
+    }
+    .badge-pill {
+      font-size: 12px;
+      font-weight: 800;
+      padding: 5px 12px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge-pendiente {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+    .badge-pagada {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+    .cuenta-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 20px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    }
+    .cuenta-card:hover {
+      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+      border-color: #cbd5e1;
+    }
+    .split-summary-box {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin: 18px 0;
+    }
+    .split-summary-card {
+      background: #f8fafc;
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+    }
+    .split-summary-card.active {
+      border-style: solid;
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+    .ticket-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+    }
+    .ticket-table th {
+      text-align: left;
+      font-size: 11px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 8px 10px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .ticket-table td {
+      padding: 10px;
+      font-size: 13px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content" style="max-width: 1200px; margin: 0 auto; padding: 24px;">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <!-- Barra Superior / Breadcrumb -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+        <a class="btn btn-soft btn-sm" th:href="@{/caja/terminal}">
+          ← Volver al Terminal de Mesas
+        </a>
+        <div style="font-size: 13px; color: #64748b;">
+          Terminal POS Caja &gt; <b>Gestión de Precuenta</b>
+        </div>
+      </div>
+
+      <!-- Cabecera de la Mesa y Pedido -->
+      <div class="precuenta-header-card">
+        <div>
+          <div style="font-size: 12px; font-weight: 800; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.5px;">
+            Mesa de Salón
+          </div>
+          <h1 style="margin: 4px 0 6px; font-size: 28px; font-weight: 900; color: #0f172a;">
+            Mesa <span th:text="${mesa != null ? mesa.numero : 'Delivery'}"></span>
+          </h1>
+          <div style="font-size: 13px; color: #64748b; display: flex; gap: 14px; flex-wrap: wrap;">
+            <span>Comanda: <b style="color: #0f172a;" th:text="${pedido.codigo}"></b></span>
+            <span>Mozo: <b style="color: #0f172a;" th:text="${pedido.usuario != null ? (pedido.usuario.nombres != null ? pedido.usuario.nombres : pedido.usuario.username) : 'Mozo Asignado'}"></b></span>
+            <span>Fecha: <b style="color: #0f172a;" th:text="${#temporals.format(pedido.fecha, 'dd/MM/yyyy HH:mm')}"></b></span>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase;">Total de la Comanda</div>
+          <div style="font-size: 32px; font-weight: 900; color: var(--brown); margin-top: 2px;">
+            S/ <span th:text="${pedido.total != null ? #numbers.formatDecimal(pedido.total, 1, 2) : '0.00'}"></span>
+          </div>
+          <div style="margin-top: 4px;">
+            <span th:if="${tienePrecuentas}" class="badge-pill badge-pagada">
+              🧾 [[${#lists.size(precuentas)}]] Precuenta(s) Generada(s)
+            </span>
+            <span th:if="${not tienePrecuentas}" class="badge-pill badge-pendiente">
+              ⏳ Sin Precuenta Emitida
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alerta si Cocina o Mozo aún no despachan todos los platos -->
+      <div th:if="${not despachado}" class="flash flash-error" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+        <span style="font-size: 22px;">⏳</span>
+        <div>
+          <b>Atención: Despacho pendiente.</b><br>
+          <span th:text="${motivoBloqueo != null ? motivoBloqueo : 'El mozo debe confirmar Servido / Entregado a Mesa antes de emitir o cobrar precuentas.'}"></span>
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- CASO 1: YA SE HAN GENERADO PRECUENTAS (Lista de Precuentas con Ticket y Cobro) -->
+      <!-- ========================================================================= -->
+      <div th:if="${tienePrecuentas}">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div>
+            <h2 style="font-size: 20px; font-weight: 800; margin: 0; color: #0f172a;">
+              Precuentas Oficiales Emitidas
+            </h2>
+            <p class="muted" style="margin: 3px 0 0; font-size: 13px;">
+              Cada precuenta puede ser impresa en ticket térmico y cobrada de manera independiente.
+            </p>
+          </div>
+          <!-- Botón Revertir Todo (Solo si ninguna precuenta ha sido pagada) -->
+          <form th:if="${puedeRevertir}" th:action="@{'/caja/precuenta/revertir-todo/' + ${pedido.idPedido}}" method="post"
+                onsubmit="return confirm('¿Revertir todas las precuentas de esta mesa? Los productos volverán a estar disponibles para emitir cuenta única o redividir.');">
+            <button type="submit" class="btn btn-soft btn-sm" style="border: 1px solid #fecaca; color: #dc2626; font-weight: 700;">
+              ↩️ Revertir Precuentas y Reorganizar
+            </button>
+          </form>
+
+          <!-- Indicador de bloqueo si ya se pagó al menos una subcuenta -->
+          <div th:if="${tienePagadas}" style="font-size: 12px; font-weight: 800; color: #166534; background: #dcfce7; border: 1px solid #bbf7d0; padding: 6px 14px; border-radius: 8px; display: flex; align-items: center; gap: 6px;">
+            <span>🔒</span>
+            <span>Cobro en curso (Subcuenta pagada · No reversible)</span>
+          </div>
+        </div>
+
+        <!-- Alerta si existen platos pendientes por asignar a una precuenta -->
+        <div th:if="${tieneItemsRestantes}" style="background: #fff7ed; border: 1px solid #fdba74; border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;">
+          <div>
+            <b style="color: #9a3412; font-size: 14px;">⚠️ Hay platos pendientes por facturar en esta comanda:</b>
+            <div style="font-size: 12px; color: #c2410c; margin-top: 4px;">
+              <span th:each="it, iter : ${itemsRestantes}">
+                [[${it.producto != null ? it.producto.nombre : 'Plato'}]] (S/ [[${#numbers.formatDecimal(it.precioActual, 1, 2)}]])<span th:if="${not iter.last}">, </span>
+              </span>
+            </div>
+          </div>
+          <form th:action="@{'/caja/precuenta/generar-restantes/' + ${pedido.idPedido}}" method="post">
+            <button type="submit" class="btn btn-primary" style="background: #ea580c; font-weight: 800; padding: 9px 18px; font-size: 13px;">
+              🧾 Generar Precuenta Restante
+            </button>
+          </form>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px; margin-bottom: 24px;">
+          <div th:each="p : ${precuentas}" class="cuenta-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+              <div>
+                <b style="font-size: 18px; color: #0f172a;" th:text="'Precuenta #' + ${p.numeroPrecuenta}"></b>
+                <div style="font-size: 11px; color: #64748b;" th:text="${p.codigo}"></div>
+              </div>
+              <div>
+                <span th:if="${p.estado != null and p.estado.name() == 'PAGADA'}" class="badge-pill badge-pagada">
+                  ✓ PAGADA
+                </span>
+                <span th:if="${p.estado != null and p.estado.name() == 'PENDIENTE'}" class="badge-pill badge-pendiente">
+                  ⏳ PENDIENTE
+                </span>
+              </div>
+            </div>
+
+            <!-- Platos de esta precuenta -->
+            <table class="ticket-table">
+              <thead>
+                <tr>
+                  <th>Plato / Producto</th>
+                  <th style="text-align: right;">Importe</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:each="det : ${p.detalles}">
+                  <td>
+                    <b th:text="${det.detallePedido.producto != null ? det.detallePedido.producto.nombre : 'Plato'}"></b>
+                    <div th:if="${det.detallePedido.nota != null and !det.detallePedido.nota.isBlank()}" style="font-size: 11px; color: #64748b;">
+                      Nota: <span th:text="${det.detallePedido.nota}"></span>
+                    </div>
+                  </td>
+                  <td style="text-align: right; font-weight: 700;" th:text="'S/ ' + ${#numbers.formatDecimal(det.precio, 1, 2)}"></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- Desglose de Totales -->
+            <div style="background: #f8fafc; border-radius: 10px; padding: 12px; margin: 12px 0; font-size: 13px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px; color: #64748b;">
+                <span>Subtotal:</span>
+                <span th:text="'S/ ' + ${#numbers.formatDecimal(p.subtotal, 1, 2)}"></span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px; color: #64748b;">
+                <span>IGV (18%):</span>
+                <span th:text="'S/ ' + ${#numbers.formatDecimal(p.igv, 1, 2)}"></span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: 900; color: var(--brown); border-top: 1px solid #e2e8f0; padding-top: 6px;">
+                <span>TOTAL:</span>
+                <span th:text="'S/ ' + ${#numbers.formatDecimal(p.total, 1, 2)}"></span>
+              </div>
+            </div>
+
+            <!-- Botones de Acción de esta Precuenta -->
+            <div style="display: flex; gap: 8px; margin-top: 14px;">
+              <!-- Botón Ticket -->
+              <a th:href="@{'/caja/precuenta/ticket/' + ${p.idPrecuenta}}" target="_blank"
+                 class="btn btn-soft" style="flex: 1; text-align: center; text-decoration: none; font-size: 13px; font-weight: 700;">
+                🖨️ Ver Ticket
+              </a>
+
+              <!-- Botón Pagar (solo si está pendiente) -->
+              <a th:if="${p.estado != null and p.estado.name() == 'PENDIENTE'}"
+                 th:href="@{'/caja/pago/precuenta/' + ${p.idPrecuenta}}"
+                 class="btn btn-primary" style="flex: 1.5; background: #22c55e; color: #052e16; font-weight: 900; text-align: center; text-decoration: none; font-size: 13px;">
+                💳 Pagar Precuenta
+              </a>
+
+              <!-- Botón Ver Comprobante si ya está pagada -->
+              <a th:if="${p.estado != null and p.estado.name() == 'PAGADA'}"
+                 th:href="@{'/caja/comprobante/precuenta/' + ${p.idPrecuenta}}" target="_blank"
+                 class="btn btn-soft" style="flex: 1.5; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 800; text-align: center; text-decoration: none; font-size: 13px;">
+                🧾 Ver Comprobante
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- CASO 2: NO HAY PRECUENTAS Y NO ESTÁ EN MODO SPLIT (Opción Única o Split)  -->
+      <!-- ========================================================================= -->
+      <div th:if="${not tienePrecuentas and not modoSplit}" class="cuenta-card" style="padding: 26px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px;">
+          <div>
+            <h2 style="font-size: 20px; font-weight: 800; margin: 0 0 4px; color: #0f172a;">
+              Precuenta de Mesa en Borrador
+            </h2>
+            <p class="muted" style="margin: 0; font-size: 13px;">
+              Revisa los productos despachados a la mesa y elige si emitirás una <b>Precuenta Única</b> o <b>Dividirás en Cuentas (Split)</b>.
+            </p>
+          </div>
+        </div>
+
+        <!-- Tabla de Productos del Pedido -->
+        <table class="ticket-table" style="margin-bottom: 18px;">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Plato / Producto</th>
+              <th>Notas / Cremas</th>
+              <th style="text-align: right;">Precio Unit.</th>
+              <th style="text-align: right;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="det, iter : ${detalles}">
+              <td style="color: #94a3b8; font-weight: 700;" th:text="${iter.count}"></td>
+              <td>
+                <b style="color: #0f172a;" th:text="${det.producto != null ? det.producto.nombre : 'Plato'}"></b>
+              </td>
+              <td style="color: #64748b; font-size: 12px;">
+                <span th:text="${det.nota != null and !det.nota.isBlank() ? det.nota : '-'}"></span>
+              </td>
+              <td style="text-align: right; color: #64748b;" th:text="'S/ ' + ${#numbers.formatDecimal(det.precioActual, 1, 2)}"></td>
+              <td style="text-align: right; font-weight: 800; color: #0f172a;" th:text="'S/ ' + ${#numbers.formatDecimal(det.precioActual, 1, 2)}"></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Resumen de Costo -->
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+          <div style="width: 280px; background: #f8fafc; border-radius: 12px; padding: 14px; border: 1px solid #e2e8f0;">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; color: #64748b; margin-bottom: 4px;">
+              <span>Subtotal:</span>
+              <span th:text="'S/ ' + ${#numbers.formatDecimal(pedido.total * 0.82, 1, 2)}"></span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 13px; color: #64748b; margin-bottom: 6px;">
+              <span>I.G.V. (18%):</span>
+              <span th:text="'S/ ' + ${#numbers.formatDecimal(pedido.total * 0.18, 1, 2)}"></span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 20px; font-weight: 900; color: var(--brown); border-top: 1px solid #e2e8f0; padding-top: 6px;">
+              <span>TOTAL:</span>
+              <span th:text="'S/ ' + ${#numbers.formatDecimal(pedido.total, 1, 2)}"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barra de Acciones de Precuenta Temporal -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="font-size: 14px; font-weight: 800; color: #0f172a;">
+              Opciones de Precuenta Temporal:
+            </div>
+            <span class="badge-pill badge-pendiente" style="font-size: 11px;">
+              ⏳ Borrador no oficializado
+            </span>
+          </div>
+
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <!-- 1. Botón Generar Precuenta -->
+            <form th:action="@{'/caja/precuenta/generar-unica/' + ${pedido.idPedido}}" method="post" style="margin: 0;">
+              <button type="submit" class="btn btn-primary" style="font-weight: 800; padding: 10px 20px; font-size: 14px;"
+                      th:disabled="${not despachado}">
+                🧾 Generar Precuenta
+              </button>
+            </form>
+
+            <!-- 2. Botón Pagar (Desactivado hasta generar precuenta) -->
+            <button type="button" class="btn" disabled
+                    style="background: #e2e8f0; color: #94a3b8; font-weight: 800; padding: 10px 18px; cursor: not-allowed;"
+                    title="El botón pagar se activará una vez generada la precuenta">
+              💳 Pagar (Se activará al generar)
+            </button>
+
+            <!-- 3. Botón Split -->
+            <a th:if="${maxCuentas >= 2}"
+               th:href="@{'/caja/precuenta/pedido/' + ${pedido.idPedido} + '?split=true'}"
+               class="btn btn-soft" style="font-weight: 800; padding: 10px 18px; border: 1px solid #f59e0b; color: #b45309; text-decoration: none; margin-left: auto;">
+              ✂️ Dividir en Cuentas (Split)
+            </a>
+            <button th:if="${maxCuentas < 2}" type="button" class="btn" disabled
+                    style="background: #f1f5f9; color: #94a3b8; font-weight: 700; padding: 10px 18px; border: 1px solid #e2e8f0; margin-left: auto; cursor: not-allowed;"
+                    title="Se requieren al menos 2 platos para dividir en cuentas">
+              ✂️ Split (Requiere 2+ platos)
+            </button>
+          </div>
+
+          <div style="font-size: 12px; color: #64748b; margin-top: 12px; background: #fff; padding: 8px 12px; border-radius: 8px; border: 1px solid #f1f5f9;">
+            💡 <b>Flujo de Caja:</b> Esta orden aún está en borrador. Presione <b>Generar Precuenta</b> para emitir el ticket oficial y habilitar el botón de <b>Pagar</b>. Si los clientes solicitan cuentas separadas, use <b>Dividir en Cuentas (Split)</b>.
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- CASO 3: MODO SPLIT ACTIVO (Asignar cada plato a su número de cuenta)     -->
+      <!-- ========================================================================= -->
+      <div th:if="${not tienePrecuentas and modoSplit}" class="cuenta-card" style="padding: 26px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+          <div>
+            <div style="font-size: 12px; font-weight: 800; color: #ea580c; text-transform: uppercase;">
+              División Personalizada por Productos
+            </div>
+            <h2 style="font-size: 22px; font-weight: 900; margin: 4px 0; color: #0f172a;">
+              ✂️ Asignar Platos a Cada Precuenta
+            </h2>
+            <p class="muted" style="margin: 0; font-size: 13px;">
+              Elige la cantidad de cuentas solicitadas y asigna cada plato a su respectiva cuenta.
+            </p>
+          </div>
+          <a th:href="@{'/caja/precuenta/pedido/' + ${pedido.idPedido}}" class="btn btn-soft btn-sm">
+            ✕ Cancelar División
+          </a>
+        </div>
+
+        <!-- Formulario Spring MVC de Split -->
+        <form th:action="@{'/caja/precuenta/guardar-split/' + ${pedido.idPedido}}" method="post" id="formSplitPrecuenta" onsubmit="return validarEnvioSplit();">
+          
+          <!-- Selector de Cantidad de Cuentas Solicitadas -->
+          <div style="background: #fff7ed; border: 1px solid #ffedd5; border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px;">
+            <label for="selectCantidadCuentas" style="font-weight: 800; font-size: 14px; color: #9a3412;">
+              ¿En cuántas precuentas desea dividir el cliente?
+            </label>
+            <select id="selectCantidadCuentas" class="form-control" style="max-width: 200px; font-weight: 800; font-size: 14px;" onchange="actualizarNumeroCuentas(this.value)">
+              <option th:each="n : ${maxCuentas >= 2 ? #numbers.sequence(2, maxCuentas) : #numbers.sequence(1, 1)}"
+                      th:value="${n}"
+                      th:text="${n} + ' Subcuentas'">
+              </option>
+            </select>
+            <small style="color: #9a3412; font-size: 12px;">
+              (Máximo [[${maxCuentas}]] cuentas determinado por el total de platos de la orden)
+            </small>
+          </div>
+
+          <!-- Tarjetas Resumen de Totales por Cuenta -->
+          <div class="split-summary-box" id="contenedorResumenCuentas">
+            <!-- Se actualiza dinámicamente con JS -->
+          </div>
+
+          <!-- Tabla de Asignación Plato por Plato -->
+          <table class="ticket-table" style="margin-bottom: 24px;">
+            <thead>
+              <tr style="background: #f8fafc;">
+                <th style="width: 40px;">#</th>
+                <th>Plato / Producto</th>
+                <th>Notas</th>
+                <th style="text-align: right; width: 120px;">Precio</th>
+                <th style="width: 220px; text-align: center;">Asignar a Precuenta</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="det, iter : ${detalles}">
+                <td style="color: #94a3b8; font-weight: 700;" th:text="${iter.count}"></td>
+                <td>
+                  <b style="color: #0f172a; font-size: 14px;" th:text="${det.producto != null ? det.producto.nombre : 'Plato'}"></b>
+                </td>
+                <td style="color: #64748b; font-size: 12px;">
+                  <span th:text="${det.nota != null and !det.nota.isBlank() ? det.nota : '-'}"></span>
+                </td>
+                <td style="text-align: right; font-weight: 800; color: #0f172a;"
+                    th:text="'S/ ' + ${#numbers.formatDecimal(det.precioActual, 1, 2)}"></td>
+                <td style="text-align: center;">
+                  <select th:name="'cuenta_' + ${det.idDetallePedido}"
+                          class="form-control select-cuenta-plato"
+                          th:data-precio="${det.precioActual}"
+                          onchange="recalcularTotalesSplit()"
+                          style="font-weight: 700; border-radius: 8px;">
+                    <!-- Opciones de cuenta generadas por JS -->
+                  </select>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Botones de Confirmación del Split -->
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 18px;">
+            <a th:href="@{'/caja/precuenta/pedido/' + ${pedido.idPedido}}" class="btn btn-soft">
+              ← Cancelar y Volver
+            </a>
+            <button type="submit" class="btn btn-primary" style="font-weight: 900; padding: 12px 24px; font-size: 15px;">
+              💾 Guardar y Generar [[<span id="labelBotonCuentas">2</span>]] Precuentas
+            </button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Script Dinámico para el Modo Split -->
+<script th:inline="javascript">
+  let cantidadCuentasActual = 2;
+
+  function inicializarSplit() {
+    const selector = document.getElementById('selectCantidadCuentas');
+    if (selector) {
+      actualizarNumeroCuentas(selector.value);
+    }
+  }
+
+  function actualizarNumeroCuentas(num) {
+    cantidadCuentasActual = parseInt(num) || 2;
+    document.getElementById('labelBotonCuentas').textContent = cantidadCuentasActual;
+
+    // Actualizar las opciones en los <select> de cada plato
+    const selects = document.querySelectorAll('.select-cuenta-plato');
+    selects.forEach((sel, index) => {
+      const valorPrevio = parseInt(sel.value) || ((index % cantidadCuentasActual) + 1);
+      sel.innerHTML = '';
+      for (let i = 1; i <= cantidadCuentasActual; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = 'Cuenta #' + i;
+        if (i === valorPrevio || (valorPrevio > cantidadCuentasActual && i === 1)) {
+          opt.selected = true;
+        }
+        sel.appendChild(opt);
+      }
+    });
+
+    recalcularTotalesSplit();
+  }
+
+  function recalcularTotalesSplit() {
+    const totales = {};
+    const conteo = {};
+    for (let i = 1; i <= cantidadCuentasActual; i++) {
+      totales[i] = 0;
+      conteo[i] = 0;
+    }
+
+    const selects = document.querySelectorAll('.select-cuenta-plato');
+    selects.forEach(sel => {
+      const cuentaNum = parseInt(sel.value) || 1;
+      const precio = parseFloat(sel.dataset.precio) || 0;
+      if (totales[cuentaNum] !== undefined) {
+        totales[cuentaNum] += precio;
+        conteo[cuentaNum] += 1;
+      }
+    });
+
+    // Renderizar tarjetas resumen de cada cuenta
+    const cont = document.getElementById('contenedorResumenCuentas');
+    if (!cont) return;
+    cont.innerHTML = '';
+
+    for (let i = 1; i <= cantidadCuentasActual; i++) {
+      const card = document.createElement('div');
+      card.className = 'split-summary-card ' + (conteo[i] > 0 ? 'active' : '');
+      card.innerHTML = `
+        <div style="font-size: 13px; font-weight: 800; color: ${conteo[i] > 0 ? '#1e40af' : '#64748b'};">
+          Precuenta #${i}
+        </div>
+        <div style="font-size: 20px; font-weight: 900; color: var(--brown); margin: 4px 0;">
+          S/ ${totales[i].toFixed(2)}
+        </div>
+        <div style="font-size: 11px; color: #64748b;">
+          ${conteo[i]} plato(s) asignado(s)
+        </div>
+      `;
+      cont.appendChild(card);
+    }
+  }
+
+  function validarEnvioSplit() {
+    // Validar que cada cuenta tenga al menos 1 plato
+    const selects = document.querySelectorAll('.select-cuenta-plato');
+    const cuentasAsignadas = new Set();
+    selects.forEach(s => cuentasAsignadas.add(parseInt(s.value)));
+
+    for (let i = 1; i <= cantidadCuentasActual; i++) {
+      if (!cuentasAsignadas.has(i)) {
+        alert('La Precuenta #' + i + ' no tiene ningún plato asignado. Asigne al menos un plato a cada cuenta o reduzca la cantidad de cuentas.');
+        return false;
+      }
+    }
+    return true;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('selectCantidadCuentas')) {
+      inicializarSplit();
+    }
+  });
+</script>
+
+</body>
+</html>

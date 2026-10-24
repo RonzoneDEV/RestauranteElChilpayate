@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Comanda #[[${pedido.codigo}]] · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header">
+        <div>
+          <div class="eyebrow">Detalle de Comanda</div>
+          <h2>Pedido <span th:text="${pedido.codigo}"></span></h2>
+          <p class="muted">
+            <span th:if="${pedido.tipo.name() == 'SALON'}">🍽 Salón · Mesa #[[${pedido.mesa != null ? pedido.mesa.numero : '-'}]]</span>
+            <span th:if="${pedido.tipo.name() == 'DELIVERY'}">🛵 Delivery · [[${pedido.pedidoDelivery != null ? pedido.pedidoDelivery.direccion : '-'}]]</span>
+            · Estado: <b th:text="${pedido.estado}"></b>
+            · Atendido por: <b th:text="${pedido.usuario != null ? pedido.usuario.nombres : 'Sistema'}"></b>
+          </p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <form th:action="@{/pedidos/edit/{id}/cocina(id=${pedido.idPedido})}" method="post" style="display: inline;">
+            <button class="btn btn-primary" type="submit">🍳 Enviar a Cocina</button>
+          </form>
+          <a class="btn btn-soft" th:href="@{'/caja/pago/' + ${pedido.idPedido}}">💳 Ir a Cobrar</a>
+          <a class="btn btn-secondary" th:href="@{/pedidos}">← Volver</a>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 380px; gap: 20px;">
+        <!-- Lista de Ítems del Pedido -->
+        <div class="card">
+          <h3 style="margin-bottom: 16px;">Ítems de la Comanda</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Cremas / Salsas</th>
+                  <th>Nota</th>
+                  <th>Precio</th>
+                  <th>Cocina</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:each="d : ${pedido.detallePedido}">
+                  <td>
+                    <b th:text="${d.producto != null ? d.producto.nombre : 'Producto'}"></b>
+                  </td>
+                  <td>
+                    <div th:if="${d.detallePedidoCrema != null and not #lists.isEmpty(d.detallePedidoCrema)}" style="font-size: 12px;">
+                      🥣 <b>Cremas:</b>
+                      <span th:each="dc, iterStat : ${d.detallePedidoCrema}" th:text="${dc.crema.nombre + (iterStat.last ? '' : ', ')}"></span>
+                    </div>
+                    <div th:if="${d.detallePedidoSalsa != null and not #lists.isEmpty(d.detallePedidoSalsa)}" style="font-size: 12px; margin-top: 4px;">
+                      🌶 <b>Salsas:</b>
+                      <span th:each="ds, iterStat : ${d.detallePedidoSalsa}" th:text="${ds.salsa.nombre + (iterStat.last ? '' : ', ')}"></span>
+                    </div>
+                    <small class="muted" th:if="${(#lists.isEmpty(d.detallePedidoCrema)) and (#lists.isEmpty(d.detallePedidoSalsa))}">-</small>
+                  </td>
+                  <td>
+                    <small class="muted" th:text="${d.nota != null and !d.nota.isBlank() ? d.nota : '-'}"></small>
+                  </td>
+                  <td style="font-weight: 700;" th:text="'S/ ' + ${#numbers.formatDecimal(d.precioActual, 1, 2)}"></td>
+                  <td>
+                    <span th:class="${'badge ' + (d.estado.name() == 'ENTREGADO' ? 'badge-ok' : (d.estado.name() == 'EN_COCINA' ? 'badge-warning' : (d.estado.name() == 'ANULADO' ? 'badge-bad' : 'badge-info')))}"
+                          th:text="${d.estado}"></span>
+                  </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(pedido.detallePedido)}">
+                  <td colspan="5" class="muted" style="text-align: center; padding: 24px;">No hay ítems agregados a esta comanda todavía.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="margin-top: 20px; padding: 16px; background: #f8fafc; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 16px; font-weight: 600;">Total del Pedido:</span>
+            <span style="font-size: 24px; font-weight: 800; color: #0f172a;" th:text="'S/ ' + ${#numbers.formatDecimal(total, 1, 2)}"></span>
+          </div>
+        </div>
+
+        <!-- Panel para Agregar Ítem -->
+        <div class="card">
+          <h3 style="margin-bottom: 16px;">+ Agregar Plato / Bebida</h3>
+          <form th:action="@{/pedidos/edit/{id}/item(id=${pedido.idPedido})}" method="post">
+            <div class="form-grid">
+              <div class="full">
+                <label class="form-label">Producto *</label>
+                <select class="form-select" name="idProducto" required>
+                  <option value="">-- Seleccionar producto --</option>
+                  <option th:each="prod : ${productos}" th:value="${prod.idProducto}"
+                          th:text="${prod.nombre + ' (S/ ' + #numbers.formatDecimal(prod.precio, 1, 2) + ')'}"></option>
+                </select>
+              </div>
+
+              <div class="full">
+                <label class="form-label">Cremas de cortesía</label>
+                <div style="max-height: 120px; overflow-y: auto; border: 1px solid #e2e8f0; padding: 8px; border-radius: 6px;">
+                  <div th:each="cr : ${cremas}" style="margin-bottom: 4px;">
+                    <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                      <input type="checkbox" name="idCremas" th:value="${cr.idCrema}">
+                      <span th:text="${cr.nombre}"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="full">
+                <label class="form-label">Salsas para Alitas</label>
+                <div style="max-height: 120px; overflow-y: auto; border: 1px solid #e2e8f0; padding: 8px; border-radius: 6px;">
+                  <div th:each="sa : ${salsas}" style="margin-bottom: 4px;">
+                    <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                      <input type="checkbox" name="idSalsas" th:value="${sa.idProducto}">
+                      <span th:text="${sa.nombre}"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="full">
+                <label class="form-label">Nota especial</label>
+                <input class="form-control" name="nota" placeholder="Ej: Sin sal, bien cocido, salsa aparte">
+              </div>
+            </div>
+
+            <button class="btn btn-primary" style="width: 100%; margin-top: 16px;" type="submit">+ Añadir a Comanda</button>
+          </form>
+
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid #e2e8f0;">
+
+          <form th:action="@{/pedidos/anular/{id}(id=${pedido.idPedido})}" method="post"
+                onsubmit="return confirm('¿Está seguro de anular esta comanda completa? Se devolverá el stock.');">
+            <input type="hidden" name="motivo" value="Cancelado por el usuario">
+            <button class="btn btn-soft btn-sm" style="width: 100%; color: #ef4444;" type="submit">✕ Anular Pedido</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

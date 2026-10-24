@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${(venta.tipoComprobante ?: 'COMPROBANTE') + ' ' + (venta.numeroComprobante ?: '') + ' · El Chilpayate'}">Comprobante de Venta · El Chilpayate</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 13px;
+      line-height: 1.4;
+      color: #000;
+      background: #f1f5f9;
+      margin: 0;
+      padding: 24px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .ticket-container {
+      width: 330px;
+      max-width: 100%;
+      background: #ffffff;
+      padding: 20px 18px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+      color: #000;
+    }
+    .ticket-header {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .ticket-title {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+    .ticket-subtitle {
+      font-size: 11px;
+      color: #222;
+      margin-top: 2px;
+      line-height: 1.35;
+    }
+    .ticket-divider {
+      border-top: 1px dashed #000;
+      margin: 9px 0;
+    }
+    .ticket-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+      font-size: 12px;
+    }
+    .ticket-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 6px 0;
+      font-size: 12px;
+    }
+    .ticket-table th {
+      border-bottom: 1px dashed #000;
+      text-align: left;
+      font-size: 11px;
+      padding: 4px 0;
+      font-weight: 800;
+    }
+    .ticket-table td {
+      padding: 4px 0;
+      vertical-align: top;
+    }
+    .ticket-total {
+      font-size: 16px;
+      font-weight: 900;
+    }
+    .actions {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 400px;
+    }
+    .btn {
+      padding: 9px 16px;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-print {
+      background: #0f172a;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .btn-print:hover {
+      background: #1e293b;
+    }
+    .btn-terminal {
+      background: #2563eb;
+      color: #ffffff;
+    }
+    .btn-terminal:hover {
+      background: #1d4ed8;
+    }
+    .btn-soft {
+      background: #e2e8f0;
+      color: #1e293b;
+    }
+    .btn-soft:hover {
+      background: #cbd5e1;
+    }
+    @page {
+      margin: 0;
+      size: 80mm auto;
+    }
+    @media print {
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .ticket-container {
+        border: none !important;
+        box-shadow: none !important;
+        width: 100% !important;
+        max-width: 78mm !important;
+        margin: 0 auto !important;
+        padding: 2mm 0 !important;
+      }
+      .actions, .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="ticket-container">
+  <!-- Encabezado de la Empresa -->
+  <div class="ticket-header">
+    <div class="ticket-title" th:text="${configuracion != null and configuracion.nombre != null ? configuracion.nombre.toUpperCase() : 'EL CHILPAYATE'}">
+      EL CHILPAYATE
+    </div>
+    <div class="ticket-subtitle">Restaurante de Alitas y Platos</div>
+    <div class="ticket-subtitle" style="font-weight: 800; font-size: 12px; margin-top: 3px;">
+      RUC: <span th:text="${configuracion != null and configuracion.ruc != null ? configuracion.ruc : '10876343874'}">10876343874</span>
+    </div>
+    <div class="ticket-subtitle" th:text="${configuracion != null ? configuracion.direccionCompleta : 'Carlos Wiesse 625, Santo Dominguito · Trujillo - La Libertad'}">
+      Carlos Wiesse 625, Santo Dominguito · Trujillo - La Libertad
+    </div>
+    <div class="ticket-subtitle" style="font-size: 10px; color: #444;" th:if="${configuracion != null and configuracion.inicioTurno != null and configuracion.finTurno != null}">
+      Horario: <span th:text="${configuracion.inicioTurno + ' a ' + configuracion.finTurno}">18:00 a 23:30</span>
+    </div>
+  </div>
+
+  <div class="ticket-divider"></div>
+
+  <!-- Título y Número del Comprobante Fiscal -->
+  <div style="text-align: center; font-weight: 900; font-size: 14px; margin: 4px 0;">
+    *** <span th:text="${(venta.tipoComprobante ?: 'BOLETA') + ' ELECTRÓNICA'}">BOLETA ELECTRÓNICA</span> ***
+  </div>
+  <div style="text-align: center; font-weight: 800; font-size: 13px;" th:text="${venta.numeroComprobante ?: 'B001-000000'}">
+    B001-000123
+  </div>
+
+  <div class="ticket-divider"></div>
+
+  <!-- Datos de Emisión y Cliente -->
+  <div class="ticket-row">
+    <span><b>FECHA:</b></span>
+    <span th:text="${venta.fechaHora != null ? #temporals.format(venta.fechaHora, 'dd/MM/yyyy HH:mm:ss') : '-'}">24/10/2026 12:30:00</span>
+  </div>
+  <div class="ticket-row">
+    <span><b>CLIENTE:</b></span>
+    <span th:text="${venta.nombreCliente != null and !venta.nombreCliente.isBlank() ? venta.nombreCliente : 'Público General'}">Carlos Mendoza</span>
+  </div>
+  <div class="ticket-row" th:if="${venta.dniRuc != null and !venta.dniRuc.isBlank()}">
+    <span><b>DOC./RUC:</b></span>
+    <span th:text="${venta.dniRuc}">12345678</span>
+  </div>
+  <div class="ticket-row">
+    <span><b>DESTINO:</b></span>
+    <span>
+      <span th:if="${venta.pedido != null and venta.pedido.mesa != null}" th:text="'Mesa #' + ${venta.pedido.mesa.numero} + ' (' + ${venta.pedido.mesa.salon} + ')'"></span>
+      <span th:if="${venta.pedido != null and venta.pedido.mesa == null and venta.pedido.tipo != null and venta.pedido.tipo.name() == 'DELIVERY'}">🛵 Delivery</span>
+      <span th:if="${venta.pedido == null or (venta.pedido.mesa == null and (venta.pedido.tipo == null or venta.pedido.tipo.name() != 'DELIVERY'))}">Salón</span>
+    </span>
+  </div>
+  <div class="ticket-row">
+    <span><b>COMANDA:</b></span>
+    <span th:text="${venta.pedido != null ? venta.pedido.codigo : '-'}">PED-12345</span>
+  </div>
+  <div class="ticket-row" th:if="${venta.precuenta != null}">
+    <span><b>PRECUENTA:</b></span>
+    <span th:text="'#' + ${venta.precuenta.numeroPrecuenta} + ' (' + ${venta.precuenta.codigo} + ')'">#1</span>
+  </div>
+  <div class="ticket-row">
+    <span><b>CAJERO:</b></span>
+    <span th:text="${venta.usuario != null ? (venta.usuario.nombres != null ? venta.usuario.nombres : venta.usuario.username) : 'Cajero'}">Cajero</span>
+  </div>
+
+  <div class="ticket-divider"></div>
+
+  <!-- Tabla de Productos Consumidos -->
+  <table class="ticket-table">
+    <thead>
+      <tr>
+        <th style="width: 32px;">CANT</th>
+        <th>DESCRIPCIÓN</th>
+        <th style="text-align: right; width: 68px;">TOTAL</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Si la venta proviene de una subcuenta dividida (Precuenta) -->
+      <th:block th:if="${venta.precuenta != null and venta.precuenta.detalles != null and not #lists.isEmpty(venta.precuenta.detalles)}">
+        <tr th:each="det : ${venta.precuenta.detalles}">
+          <td>1</td>
+          <td>
+            <div th:text="${det.detallePedido != null and det.detallePedido.producto != null ? det.detallePedido.producto.nombre : 'Plato'}">Plato</div>
+            <div th:if="${det.detallePedido != null and det.detallePedido.nota != null and !det.detallePedido.nota.isBlank()}" style="font-size: 10px; color: #444;" th:text="${det.detallePedido.nota}"></div>
+          </td>
+          <td style="text-align: right;" th:text="'S/ ' + ${#numbers.formatDecimal(det.precio != null ? det.precio : 0, 1, 2)}"></td>
+        </tr>
+      </th:block>
+
+      <!-- Si la venta proviene del pedido general o comanda completa -->
+      <th:block th:if="${venta.precuenta == null and venta.pedido != null and venta.pedido.detallePedido != null}">
+        <tr th:each="det : ${venta.pedido.detallePedido}" th:if="${det.estado == null or det.estado.name() != 'ANULADO'}">
+          <td>1</td>
+          <td>
+            <div th:text="${det.producto != null ? det.producto.nombre : 'Plato'}">Plato</div>
+            <div th:if="${det.nota != null and !det.nota.isBlank()}" style="font-size: 10px; color: #444;" th:text="${det.nota}"></div>
+          </td>
+          <td style="text-align: right;" th:text="'S/ ' + ${#numbers.formatDecimal(det.precioActual != null ? det.precioActual : 0, 1, 2)}"></td>
+        </tr>
+        <tr th:if="${venta.pedido.pedidoDelivery != null and venta.pedido.pedidoDelivery.costoDelivery != null and venta.pedido.pedidoDelivery.costoDelivery.compareTo(T(java.math.BigDecimal).ZERO) > 0}">
+          <td>1</td>
+          <td><b>Costo de Envío (Delivery)</b></td>
+          <td style="text-align: right;" th:text="'S/ ' + ${#numbers.formatDecimal(venta.pedido.pedidoDelivery.costoDelivery, 1, 2)}"></td>
+        </tr>
+      </th:block>
+    </tbody>
+  </table>
+
+  <!-- Medios de Pago Utilizados -->
+  <div th:if="${venta.pago != null and venta.pago.pagoMedio != null and not #lists.isEmpty(venta.pago.pagoMedio)}">
+    <div class="ticket-divider"></div>
+    <div style="font-size: 11px; font-weight: 800; margin-bottom: 4px;">PAGO REGISTRADO:</div>
+    <div th:each="pm : ${venta.pago.pagoMedio}" class="ticket-row" style="font-size: 11px;">
+      <span>
+        <span th:text="${pm.metodoPago != null ? pm.metodoPago.nombre : 'Pago'}">Efectivo</span>
+        <span th:if="${pm.numeroOperacion != null and !pm.numeroOperacion.isBlank()}" style="font-size: 10px; color: #555;" th:text="'(Op:' + ${pm.numeroOperacion} + ')'"></span>
+      </span>
+      <span th:text="'S/ ' + ${#numbers.formatDecimal(pm.monto != null ? pm.monto : 0, 1, 2)}">S/ 0.00</span>
+    </div>
+  </div>
+
+  <div class="ticket-divider"></div>
+
+  <!-- Totales Fiscales -->
+  <div th:with="
+    subtotalCalc=${venta.total != null ? venta.total.divide(T(java.math.BigDecimal).valueOf(1.18), 2, T(java.math.RoundingMode).HALF_UP) : T(java.math.BigDecimal).ZERO},
+    igvCalc=${venta.total != null ? venta.total.subtract(subtotalCalc) : T(java.math.BigDecimal).ZERO}
+  ">
+    <div class="ticket-row">
+      <span>OP. GRAVADA:</span>
+      <span th:text="'S/ ' + ${#numbers.formatDecimal(subtotalCalc, 1, 2)}">S/ 0.00</span>
+    </div>
+    <div class="ticket-row">
+      <span>I.G.V. (18%):</span>
+      <span th:text="'S/ ' + ${#numbers.formatDecimal(igvCalc, 1, 2)}">S/ 0.00</span>
+    </div>
+    <div class="ticket-row ticket-total" style="margin-top: 5px; font-size: 17px;">
+      <span>TOTAL PAGADO:</span>
+      <span th:text="'S/ ' + ${#numbers.formatDecimal(venta.total != null ? venta.total : 0, 1, 2)}">S/ 0.00</span>
+    </div>
+  </div>
+
+  <div class="ticket-divider"></div>
+
+  <!-- Pie de Ticket Térmico -->
+  <div style="text-align: center; font-size: 11px; margin-top: 6px; line-height: 1.4;">
+    ¡Gracias por su preferencia!<br>
+    Representación impresa de la Boleta de Venta Electrónica.<br>
+    <small style="font-size: 10px; color: #555;">Consulte su comprobante en www.sunat.gob.pe</small>
+  </div>
+</div>
+
+<!-- Botones de Acción (Ocultos al Imprimir en Cinta Térmica) -->
+<div class="actions no-print">
+  <button type="button" class="btn btn-print" onclick="window.print()">
+    🖨️ Imprimir en Cinta Térmica
+  </button>
+  <a class="btn btn-terminal" th:href="@{/caja/terminal}">
+    🖥️ Terminal de Caja
+  </a>
+  <a class="btn btn-soft" th:if="${venta.pedido != null and venta.pedido.tipo != null and venta.pedido.tipo.name() == 'DELIVERY'}" th:href="@{/delivery}">
+    🛵 Panel Delivery
+  </a>
+  <a class="btn btn-soft" th:href="@{/caja}">
+    💳 Lista de Cobros
+  </a>
+  <button type="button" class="btn btn-soft" onclick="history.back() || window.close()">
+    ✕ Volver
+  </button>
+</div>
+
+</body>
+</html>

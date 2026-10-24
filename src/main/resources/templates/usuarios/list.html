@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Usuarios · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px;">
+        <div>
+          <div class="eyebrow">Seguridad y Personal</div>
+          <h1 class="page-title">Usuarios y Credenciales</h1>
+          <p class="muted">Gestiona los colaboradores y asigna sus roles operativos (Administrador, Mozo, Cajero, Cocinero).</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <a class="btn btn-soft" th:href="@{/roles}">🛡 Gestión de Roles</a>
+          <a class="btn btn-primary" th:href="@{/usuarios/create}">+ Nuevo Usuario</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombres y Apellidos</th>
+                <th>Usuario (Login)</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th style="text-align: right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="u : ${usuarios}">
+                <td th:text="${u.idUsuario}"></td>
+                <td><b th:text="${u.nombres + ' ' + (u.apellidos != null ? u.apellidos : '')}"></b></td>
+                <td><code th:text="${u.username}"></code></td>
+                <td>
+                  <span class="badge badge-info" th:text="${u.rol != null ? u.rol.nombre : 'Sin rol'}"></span>
+                </td>
+                <td>
+                  <span th:class="${'badge ' + (u.estado ? 'badge-ok' : 'badge-bad')}"
+                        th:text="${u.estado ? 'ACTIVO' : 'INACTIVO'}"></span>
+                </td>
+                <td class="actions" style="justify-content: flex-end;">
+                  <a class="btn btn-soft btn-sm" th:href="@{'/usuarios/edit/' + ${u.idUsuario}}">Editar</a>
+                  <a class="btn btn-sm" th:classappend="${u.estado ? 'btn-danger' : 'btn-secondary'}"
+                     th:href="@{'/usuarios/delete/' + ${u.idUsuario}}"
+                     th:text="${u.estado ? 'Desactivar' : 'Activar'}"
+                     onclick="return confirm('¿Desea cambiar el estado de este usuario?');"></a>
+                </td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(usuarios)}">
+                <td colspan="6" class="muted" style="text-align: center; padding: 25px;">No hay usuarios registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

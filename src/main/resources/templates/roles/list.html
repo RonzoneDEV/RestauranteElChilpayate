@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gestión de Roles · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header" style="margin-bottom: 24px;">
+        <div class="eyebrow">Seguridad y Permisos</div>
+        <h1 class="page-title">Roles de Usuarios</h1>
+        <p class="muted">Gestión de perfiles de acceso. Los roles <b>Administrador</b>, <b>Mozo</b>, <b>Cajero</b> y <b>Cocinero</b> son requeridos por los módulos operativos del restaurante.</p>
+      </div>
+
+      <!-- Alerta de seguridad para datos sensibles -->
+      <div class="card" style="border-left: 5px solid #f59e0b; background: #fffbeb; margin-bottom: 24px;">
+        <div style="display: flex; gap: 14px; align-items: center;">
+          <span style="font-size: 26px;">⚠️</span>
+          <div>
+            <b style="color: #92400e;">Advertencia de Seguridad: Datos Sensibles</b>
+            <div style="font-size: 13px; color: #78350f; margin-top: 2px;">
+              Los roles determinan qué usuarios pueden cobrar en caja, anular comandas o acceder a reportes financieros. Los roles del sistema se encuentran protegidos contra eliminación para evitar bloqueos operativos.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <!-- Tabla de Roles -->
+        <div class="card">
+          <div class="section-head">
+            <h3 style="margin: 0;">Roles Configurados</h3>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre del Rol</th>
+                  <th>Tipo</th>
+                  <th>Estado</th>
+                  <th style="text-align: right;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:each="r : ${roles}">
+                  <td th:text="${r.idRol}"></td>
+                  <td><b th:text="${r.nombre}"></b></td>
+                  <td>
+                    <span th:if="${#strings.equalsIgnoreCase(r.nombre, 'Administrador') or #strings.equalsIgnoreCase(r.nombre, 'Admin') or #strings.equalsIgnoreCase(r.nombre, 'Mozo') or #strings.equalsIgnoreCase(r.nombre, 'Cajero') or #strings.equalsIgnoreCase(r.nombre, 'Caja') or #strings.equalsIgnoreCase(r.nombre, 'Cocinero') or #strings.equalsIgnoreCase(r.nombre, 'Cocina')}"
+                          class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d;">
+                      🔒 Sistema (Núcleo)
+                    </span>
+                    <span th:unless="${#strings.equalsIgnoreCase(r.nombre, 'Administrador') or #strings.equalsIgnoreCase(r.nombre, 'Admin') or #strings.equalsIgnoreCase(r.nombre, 'Mozo') or #strings.equalsIgnoreCase(r.nombre, 'Cajero') or #strings.equalsIgnoreCase(r.nombre, 'Caja') or #strings.equalsIgnoreCase(r.nombre, 'Cocinero') or #strings.equalsIgnoreCase(r.nombre, 'Cocina')}"
+                          class="badge badge-info">
+                      Personalizado
+                    </span>
+                  </td>
+                  <td>
+                    <span th:class="${'badge ' + (r.estado ? 'badge-ok' : 'badge-bad')}"
+                          th:text="${r.estado ? 'ACTIVO' : 'INACTIVO'}"></span>
+                  </td>
+                  <td class="actions" style="justify-content: flex-end;">
+                    <span th:if="${#strings.equalsIgnoreCase(r.nombre, 'Administrador') or #strings.equalsIgnoreCase(r.nombre, 'Admin') or #strings.equalsIgnoreCase(r.nombre, 'Mozo') or #strings.equalsIgnoreCase(r.nombre, 'Cajero') or #strings.equalsIgnoreCase(r.nombre, 'Caja') or #strings.equalsIgnoreCase(r.nombre, 'Cocinero') or #strings.equalsIgnoreCase(r.nombre, 'Cocina')}"
+                          class="badge" style="background:#f1f5f9; color:#64748b;" title="Rol base del sistema inmutable">
+                      Inmutable
+                    </span>
+                    <a th:unless="${#strings.equalsIgnoreCase(r.nombre, 'Administrador') or #strings.equalsIgnoreCase(r.nombre, 'Admin') or #strings.equalsIgnoreCase(r.nombre, 'Mozo') or #strings.equalsIgnoreCase(r.nombre, 'Cajero') or #strings.equalsIgnoreCase(r.nombre, 'Caja') or #strings.equalsIgnoreCase(r.nombre, 'Cocinero') or #strings.equalsIgnoreCase(r.nombre, 'Cocina')}"
+                       class="btn btn-sm" th:classappend="${r.estado ? 'btn-danger' : 'btn-secondary'}"
+                       th:href="@{'/roles/delete/' + ${r.idRol}}"
+                       th:text="${r.estado ? 'Desactivar' : 'Activar'}"
+                       onclick="return confirm('¿Confirma cambiar el estado de este rol?');"></a>
+                  </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(roles)}">
+                  <td colspan="5" class="muted" style="text-align: center; padding: 25px;">No hay roles registrados.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Formulario para agregar nuevo Rol -->
+        <div class="card">
+          <div class="section-head">
+            <h3 style="margin: 0;">+ Registrar Nuevo Rol</h3>
+          </div>
+          <form method="post" th:action="@{/roles/create}">
+            <div style="margin-bottom: 16px;">
+              <label class="form-label">Nombre del Rol *</label>
+              <input class="form-control" type="text" name="nombre" required placeholder="Ej: Anfitrión, Bartender, Supervisor">
+              <small class="muted" style="display: block; margin-top: 4px;">Utilice nombres claros de la estructura de personal del restaurante.</small>
+            </div>
+            <div style="margin-bottom: 20px;">
+              <label class="form-label">Nivel de Responsabilidad</label>
+              <select class="form-select">
+                <option>Operativo (Toma de pedidos / Servicio)</option>
+                <option>Producción (Cocina / Barra)</option>
+                <option>Financiero / Caja</option>
+                <option>Supervisión / Auditoría</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Crear Rol con Precaución</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

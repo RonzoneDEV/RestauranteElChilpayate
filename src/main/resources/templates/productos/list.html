@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Productos · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header">
+        <div>
+          <div class="eyebrow">Catálogo del Restaurante</div>
+          <h2>Productos y Platos</h2>
+          <p class="muted">Gestión de alitas, guarniciones, bebidas y combos.</p>
+        </div>
+        <div>
+          <a class="btn btn-primary" th:href="@{/productos/create}">+ Nuevo Producto</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Producto</th>
+                <th>Categoría</th>
+                <th>Precio</th>
+                <th>Stock</th>
+                <th>Cremas / Salsas</th>
+                <th>Estado</th>
+                <th style="text-align: right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="p : ${productos}">
+                <td th:text="${p.idProducto}"></td>
+                <td>
+                  <b th:text="${p.nombre}"></b>
+                  <div class="muted" style="font-size: 13px;" th:text="${p.descripcion}"></div>
+                </td>
+                <td>
+                  <span class="badge badge-info" th:text="${p.categoria != null ? p.categoria.nombre : 'Sin categoría'}"></span>
+                </td>
+                <td style="font-weight: 800;" th:text="'S/ ' + ${#numbers.formatDecimal(p.precio, 1, 2)}"></td>
+                <td>
+                  <span th:if="${p.controlaStock}" th:class="${p.stock != null and p.stock <= 5 ? 'badge badge-bad' : 'badge badge-ok'}" th:text="${p.stock}"></span>
+                  <span th:unless="${p.controlaStock}" class="muted" style="font-size: 12px;">Sin control</span>
+                </td>
+                <td>
+                  <small th:if="${p.permiteCrema}">🥣 Cremas</small>
+                  <small th:if="${p.permiteSalsa}">🌶 Salsa</small>
+                  <small class="muted" th:if="${!p.permiteCrema and !p.permiteSalsa}">-</small>
+                </td>
+                <td>
+                  <span th:class="${'badge ' + (p.estado ? 'badge-ok' : 'badge-bad')}"
+                        th:text="${p.estado ? 'ACTIVO' : 'INACTIVO'}"></span>
+                </td>
+                <td class="actions" style="justify-content: flex-end;">
+                  <a class="btn btn-soft btn-sm" th:href="@{'/productos/edit/' + ${p.idProducto}}">Editar</a>
+                  <a class="btn btn-sm" th:classappend="${p.estado ? 'btn-danger' : 'btn-secondary'}"
+                     th:href="@{'/productos/delete/' + ${p.idProducto}}"
+                     th:text="${p.estado ? 'Desactivar' : 'Activar'}"
+                     onclick="return confirm('¿Desea cambiar el estado de este producto?');"></a>
+                </td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(productos)}">
+                <td colspan="8" class="muted" style="text-align: center; padding: 30px;">No hay productos registrados.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,433 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="indicadores_kpi" pageWidth="595" pageHeight="842" columnWidth="535"
+              leftMargin="30" rightMargin="30" topMargin="25" bottomMargin="25">
+
+    <parameter name="DESDE" class="java.sql.Date"/>
+    <parameter name="HASTA" class="java.sql.Date"/>
+    <parameter name="FECHA_EMISION" class="java.lang.String"/>
+    <parameter name="EMPRESA_NOMBRE" class="java.lang.String"/>
+    <parameter name="EMPRESA_RUC" class="java.lang.String"/>
+    <parameter name="EMPRESA_DIRECCION" class="java.lang.String"/>
+    <parameter name="TOTAL_VENTAS" class="java.math.BigDecimal"/>
+    <parameter name="TICKET_PROMEDIO" class="java.math.BigDecimal"/>
+    <parameter name="TOTAL_COMANDAS" class="java.lang.Long"/>
+    <parameter name="TOTAL_PLATOS" class="java.lang.Long"/>
+    <parameter name="TOTAL_ALITAS_PIEZAS" class="java.lang.Long"/>
+    <parameter name="TOTAL_ALITAS_PORCIONES" class="java.lang.Long"/>
+    <parameter name="UTILIDAD_NETA" class="java.math.BigDecimal"/>
+    <parameter name="ALITA_ESTRELLA" class="java.lang.String"/>
+    <parameter name="SALSA_ESTRELLA" class="java.lang.String"/>
+    <parameter name="MOZO_ESTRELLA" class="java.lang.String"/>
+    <parameter name="HORA_PUNTA" class="java.lang.String"/>
+
+    <field name="seccion" class="java.lang.String"/>
+    <field name="orden" class="java.lang.Integer"/>
+    <field name="item" class="java.lang.String"/>
+    <field name="detalle" class="java.lang.String"/>
+    <field name="cantidad" class="java.lang.Long"/>
+    <field name="monto" class="java.math.BigDecimal"/>
+    <field name="porcentaje" class="java.lang.Double"/>
+
+    <group name="SeccionGroup">
+        <groupExpression><![CDATA[$F{seccion}]]></groupExpression>
+        <groupHeader>
+            <band height="36">
+                <rectangle>
+                    <reportElement mode="Opaque" x="0" y="5" width="535" height="16" backcolor="#F1F5F9"/>
+                    <graphicElement>
+                        <pen lineWidth="0.5" lineColor="#CBD5E1"/>
+                    </graphicElement>
+                </rectangle>
+                <textField isBlankWhenNull="true">
+                    <reportElement x="6" y="5" width="520" height="16" forecolor="#0F172A"/>
+                    <textElement verticalAlignment="Middle">
+                        <font size="9" isBold="true"/>
+                    </textElement>
+                    <textFieldExpression><![CDATA[$F{seccion}]]></textFieldExpression>
+                </textField>
+                <staticText>
+                    <reportElement x="0" y="22" width="22" height="13" forecolor="#475569"/>
+                    <textElement verticalAlignment="Middle">
+                        <font size="8" isBold="true"/>
+                    </textElement>
+                    <text><![CDATA[#]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement x="22" y="22" width="180" height="13" forecolor="#475569"/>
+                    <textElement verticalAlignment="Middle">
+                        <font size="8" isBold="true"/>
+                    </textElement>
+                    <text><![CDATA[Concepto / Presentación]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement x="202" y="22" width="125" height="13" forecolor="#475569"/>
+                    <textElement verticalAlignment="Middle">
+                        <font size="8" isBold="true"/>
+                    </textElement>
+                    <text><![CDATA[Detalle / Especificación]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement x="327" y="22" width="60" height="13" forecolor="#475569"/>
+                    <textElement textAlignment="Right" verticalAlignment="Middle">
+                        <font size="8" isBold="true"/>
+                    </textElement>
+                    <text><![CDATA[Cant. / Ped.]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement x="387" y="22" width="78" height="13" forecolor="#475569"/>
+                    <textElement textAlignment="Right" verticalAlignment="Middle">
+                        <font size="8" isBold="true"/>
+                    </textElement>
+                    <text><![CDATA[Total S/]]></text>
+                </staticText>
+                <staticText>
+                    <reportElement x="465" y="22" width="70" height="13" forecolor="#475569"/>
+                    <textElement textAlignment="Right" verticalAlignment="Middle">
+                        <font size="8" isBold="true"/>
+                    </textElement>
+                    <text><![CDATA[% Part.]]></text>
+                </staticText>
+                <line>
+                    <reportElement x="0" y="35" width="535" height="1"/>
+                    <graphicElement>
+                        <pen lineWidth="0.5" lineColor="#CBD5E1"/>
+                    </graphicElement>
+                </line>
+            </band>
+        </groupHeader>
+        <groupFooter>
+            <band height="6">
+                <line>
+                    <reportElement x="0" y="2" width="535" height="1"/>
+                    <graphicElement>
+                        <pen lineWidth="0.5" lineColor="#E2E8F0"/>
+                    </graphicElement>
+                </line>
+            </band>
+        </groupFooter>
+    </group>
+
+    <title>
+        <band height="188">
+            <!-- Encabezado de la Empresa -->
+            <rectangle>
+                <reportElement mode="Opaque" x="0" y="0" width="535" height="52" backcolor="#78350F"/>
+                <graphicElement>
+                    <pen lineWidth="0.0"/>
+                </graphicElement>
+            </rectangle>
+            <textField isBlankWhenNull="true">
+                <reportElement x="12" y="6" width="360" height="20" forecolor="#FFFFFF"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="14" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{EMPRESA_NOMBRE} != null ? $P{EMPRESA_NOMBRE} : "EL CHILPAYATE"]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="12" y="26" width="360" height="12" forecolor="#FDE68A"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8" isBold="true"/>
+                </textElement>
+                <text><![CDATA[INFORME ANALÍTICO DE VENTAS, KPIS Y RENDIMIENTO OPERATIVO]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement x="12" y="38" width="360" height="11" forecolor="#FEF3C7"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="7"/>
+                </textElement>
+                <textFieldExpression><![CDATA["RUC: " + ($P{EMPRESA_RUC} != null ? $P{EMPRESA_RUC} : "-") + " | " + ($P{EMPRESA_DIRECCION} != null ? $P{EMPRESA_DIRECCION} : "Trujillo, Perú")]]></textFieldExpression>
+            </textField>
+
+            <textField isBlankWhenNull="true">
+                <reportElement x="375" y="8" width="148" height="14" forecolor="#FFFFFF"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="8" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA["Periodo: " + $P{DESDE} + " al " + $P{HASTA}]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement x="375" y="24" width="148" height="12" forecolor="#FEF3C7"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="7"/>
+                </textElement>
+                <textFieldExpression><![CDATA["Emisión: " + ($P{FECHA_EMISION} != null ? $P{FECHA_EMISION} : "")]]></textFieldExpression>
+            </textField>
+
+            <!-- 4 Tarjetas Hero Destacadas -->
+            <!-- 1. Alita Estrella -->
+            <rectangle>
+                <reportElement mode="Opaque" x="0" y="58" width="128" height="48" backcolor="#FEF3C7"/>
+                <graphicElement>
+                    <pen lineWidth="1.0" lineColor="#FCD34D"/>
+                </graphicElement>
+            </rectangle>
+            <staticText>
+                <reportElement x="6" y="62" width="116" height="11" forecolor="#92400E"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="7" isBold="true"/>
+                </textElement>
+                <text><![CDATA[ALITA MÁS VENDIDA]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement x="6" y="73" width="116" height="16" forecolor="#78350F"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="9" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{ALITA_ESTRELLA} != null ? $P{ALITA_ESTRELLA} : "-"]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="6" y="89" width="116" height="11" forecolor="#B45309"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="7"/>
+                </textElement>
+                <text><![CDATA[Presentación favorita]]></text>
+            </staticText>
+
+            <!-- 2. Salsa Favorita -->
+            <rectangle>
+                <reportElement mode="Opaque" x="135" y="58" width="128" height="48" backcolor="#FEE2E2"/>
+                <graphicElement>
+                    <pen lineWidth="1.0" lineColor="#FCA5A5"/>
+                </graphicElement>
+            </rectangle>
+            <staticText>
+                <reportElement x="141" y="62" width="116" height="11" forecolor="#991B1B"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="7" isBold="true"/>
+                </textElement>
+                <text><![CDATA[SALSA FAVORITA]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement x="141" y="73" width="116" height="16" forecolor="#7F1D1D"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="9" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{SALSA_ESTRELLA} != null ? $P{SALSA_ESTRELLA} : "-"]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="141" y="89" width="116" height="11" forecolor="#B91C1C"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="7"/>
+                </textElement>
+                <text><![CDATA[Salsa artesanal top]]></text>
+            </staticText>
+
+            <!-- 3. Mozo Estrella -->
+            <rectangle>
+                <reportElement mode="Opaque" x="271" y="58" width="128" height="48" backcolor="#D1FAE5"/>
+                <graphicElement>
+                    <pen lineWidth="1.0" lineColor="#6EE7B7"/>
+                </graphicElement>
+            </rectangle>
+            <staticText>
+                <reportElement x="277" y="62" width="116" height="11" forecolor="#065F46"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="7" isBold="true"/>
+                </textElement>
+                <text><![CDATA[MOZO MÁS PRODUCTIVO]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement x="277" y="73" width="116" height="16" forecolor="#064E3B"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="9" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{MOZO_ESTRELLA} != null ? $P{MOZO_ESTRELLA} : "-"]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="277" y="89" width="116" height="11" forecolor="#047857"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="7"/>
+                </textElement>
+                <text><![CDATA[Mayor volumen platos]]></text>
+            </staticText>
+
+            <!-- 4. Hora Punta -->
+            <rectangle>
+                <reportElement mode="Opaque" x="407" y="58" width="128" height="48" backcolor="#EDE9FE"/>
+                <graphicElement>
+                    <pen lineWidth="1.0" lineColor="#C4B5FD"/>
+                </graphicElement>
+            </rectangle>
+            <staticText>
+                <reportElement x="413" y="62" width="116" height="11" forecolor="#5B21B6"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="7" isBold="true"/>
+                </textElement>
+                <text><![CDATA[HORA PUNTA COCINA]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement x="413" y="73" width="116" height="16" forecolor="#4C1D95"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="9" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{HORA_PUNTA} != null ? $P{HORA_PUNTA} : "-"]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="413" y="89" width="116" height="11" forecolor="#6D28D9"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="7"/>
+                </textElement>
+                <text><![CDATA[Mayor flujo de comandas]]></text>
+            </staticText>
+
+            <!-- Bloque de Resumen Financiero y Operativo -->
+            <rectangle>
+                <reportElement mode="Opaque" x="0" y="113" width="535" height="66" backcolor="#FAFAFA"/>
+                <graphicElement>
+                    <pen lineWidth="0.5" lineColor="#E2E8F0"/>
+                </graphicElement>
+            </rectangle>
+
+            <!-- Métricas Financieras (Columna 1) -->
+            <staticText>
+                <reportElement x="12" y="119" width="100" height="11" forecolor="#64748B"/>
+                <textElement><font size="7" isBold="true"/></textElement>
+                <text><![CDATA[VENTAS REGISTRADAS]]></text>
+            </staticText>
+            <textField pattern="S/ #,##0.00" isBlankWhenNull="true">
+                <reportElement x="12" y="130" width="100" height="17" forecolor="#047857"/>
+                <textElement verticalAlignment="Middle"><font size="12" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{TOTAL_VENTAS}]]></textFieldExpression>
+            </textField>
+
+            <!-- Ticket Promedio (Columna 2) -->
+            <staticText>
+                <reportElement x="122" y="119" width="95" height="11" forecolor="#64748B"/>
+                <textElement><font size="7" isBold="true"/></textElement>
+                <text><![CDATA[TICKET PROMEDIO]]></text>
+            </staticText>
+            <textField pattern="S/ #,##0.00" isBlankWhenNull="true">
+                <reportElement x="122" y="130" width="95" height="17" forecolor="#0284C7"/>
+                <textElement verticalAlignment="Middle"><font size="12" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{TICKET_PROMEDIO}]]></textFieldExpression>
+            </textField>
+
+            <!-- Comandas y Platos (Columna 3) -->
+            <staticText>
+                <reportElement x="227" y="119" width="95" height="11" forecolor="#64748B"/>
+                <textElement><font size="7" isBold="true"/></textElement>
+                <text><![CDATA[TOTAL COMANDAS]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement x="227" y="130" width="95" height="17" forecolor="#0F172A"/>
+                <textElement verticalAlignment="Middle"><font size="12" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{TOTAL_COMANDAS} != null ? ($P{TOTAL_COMANDAS} + " ped.") : "0"]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement x="227" y="148" width="95" height="12" forecolor="#64748B"/>
+                <textElement><font size="7"/></textElement>
+                <textFieldExpression><![CDATA["Platos serv.: " + ($P{TOTAL_PLATOS} != null ? $P{TOTAL_PLATOS} : "0")]]></textFieldExpression>
+            </textField>
+
+            <!-- Total Piezas de Alitas (Columna 4) -->
+            <staticText>
+                <reportElement x="332" y="119" width="95" height="11" forecolor="#64748B"/>
+                <textElement><font size="7" isBold="true"/></textElement>
+                <text><![CDATA[TOTAL ALITAS PIEZAS]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement x="332" y="130" width="95" height="17" forecolor="#D97706"/>
+                <textElement verticalAlignment="Middle"><font size="12" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{TOTAL_ALITAS_PIEZAS} != null ? ($P{TOTAL_ALITAS_PIEZAS} + " pzs") : "0"]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement x="332" y="148" width="95" height="12" forecolor="#64748B"/>
+                <textElement><font size="7"/></textElement>
+                <textFieldExpression><![CDATA["Combos: " + ($P{TOTAL_ALITAS_PORCIONES} != null ? $P{TOTAL_ALITAS_PORCIONES} : "0")]]></textFieldExpression>
+            </textField>
+
+            <!-- Utilidad Neta (Columna 5) -->
+            <staticText>
+                <reportElement x="437" y="119" width="90" height="11" forecolor="#64748B"/>
+                <textElement><font size="7" isBold="true"/></textElement>
+                <text><![CDATA[UTILIDAD ESTIMADA]]></text>
+            </staticText>
+            <textField pattern="S/ #,##0.00" isBlankWhenNull="true">
+                <reportElement x="437" y="130" width="90" height="17" forecolor="#059669"/>
+                <textElement verticalAlignment="Middle"><font size="12" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{UTILIDAD_NETA}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="437" y="148" width="90" height="12" forecolor="#64748B"/>
+                <textElement><font size="7"/></textElement>
+                <text><![CDATA[Ventas - Gastos]]></text>
+            </staticText>
+        </band>
+    </title>
+
+    <detail>
+        <band height="15">
+            <textField isBlankWhenNull="true">
+                <reportElement x="0" y="1" width="22" height="13" forecolor="#64748B"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{orden}]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement x="22" y="1" width="180" height="13" forecolor="#0F172A"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{item}]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement x="202" y="1" width="125" height="13" forecolor="#64748B"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="8"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{detalle}]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement x="327" y="1" width="60" height="13" forecolor="#0F172A"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="8" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{cantidad} != null ? $F{cantidad} : "-"]]></textFieldExpression>
+            </textField>
+            <textField pattern="S/ #,##0.00" isBlankWhenNull="true">
+                <reportElement x="387" y="1" width="78" height="13" forecolor="#047857"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="8" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{monto}]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement x="465" y="1" width="70" height="13" forecolor="#D97706"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="8" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$F{porcentaje} != null ? (new java.text.DecimalFormat("#0.0").format($F{porcentaje}) + "%") : "-"]]></textFieldExpression>
+            </textField>
+        </band>
+    </detail>
+
+    <pageFooter>
+        <band height="18">
+            <line>
+                <reportElement x="0" y="2" width="535" height="1"/>
+                <graphicElement>
+                    <pen lineWidth="0.5" lineColor="#CBD5E1"/>
+                </graphicElement>
+            </line>
+            <textField isBlankWhenNull="true">
+                <reportElement x="0" y="4" width="350" height="12" forecolor="#94A3B8"/>
+                <textElement verticalAlignment="Middle">
+                    <font size="7"/>
+                </textElement>
+                <textFieldExpression><![CDATA["El Chilpayate - Sistema de Restaurante | Generado: " + ($P{FECHA_EMISION} != null ? $P{FECHA_EMISION} : "")]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement x="385" y="4" width="150" height="12" forecolor="#94A3B8"/>
+                <textElement textAlignment="Right" verticalAlignment="Middle">
+                    <font size="7"/>
+                </textElement>
+                <textFieldExpression><![CDATA["Página " + $V{PAGE_NUMBER}]]></textFieldExpression>
+            </textField>
+        </band>
+    </pageFooter>
+
+</jasperReport>

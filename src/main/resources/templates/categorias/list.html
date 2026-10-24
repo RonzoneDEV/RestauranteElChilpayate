@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Categorías · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <div>
+          <div class="eyebrow">Catálogo y Configuración</div>
+          <h1 class="page-title">Categorías de la Carta</h1>
+          <p class="muted">Organiza los productos del restaurante. Las categorías <b>Alitas</b> y <b>Salsa</b> son el núcleo operativo del sistema.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <a class="btn btn-secondary" th:href="@{/parametros-carta}">⚙️ Parámetros de Carta (Alitas / Extras)</a>
+          <a class="btn btn-primary" th:href="@{/categorias/create}">+ Nueva Categoría</a>
+        </div>
+      </div>
+
+      <div class="card" style="max-width: 900px;">
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Tipo / Rol</th>
+                <th>Estado</th>
+                <th style="text-align: right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+				<tr th:each="c : ${categorias}" 
+				    th:with="esProtegida=${#strings.equalsIgnoreCase(c.nombre, 'Alitas') or #strings.equalsIgnoreCase(c.nombre, 'Salsa') or #strings.equalsIgnoreCase(c.nombre, 'Salsas')}">
+				  
+				  <td th:text="${c.idCategoria}"></td>
+				  <td><b th:text="${c.nombre}"></b></td>
+				  
+				  <td>
+				    <span th:if="${esProtegida}" class="badge" style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d;">
+				      ⭐ Premium
+				    </span>
+				    <span th:unless="${esProtegida}" class="badge badge-info">
+				      Estándar
+				    </span>
+				  </td>
+				  
+				  <td>
+				    <span th:class="${'badge ' + (c.estado ? 'badge-ok' : 'badge-bad')}"
+				          th:text="${c.estado ? 'ACTIVO' : 'INACTIVO'}"></span>
+				  </td>
+				  
+				  <td class="actions" style="justify-content: flex-end;">
+	
+					<a th:unless="${esProtegida}" 
+					   class="btn btn-soft btn-sm" 
+					   th:href="@{'/categorias/edit/' + ${c.idCategoria}}">
+					  Editar
+					</a>
+				    <span th:if="${esProtegida}" class="badge" style="background:#f1f5f9; color:#475569;" title="No se puede desactivar">
+				      🔒 Protegida
+				    </span>
+				    <a th:unless="${esProtegida}"
+				       class="btn btn-sm" th:classappend="${c.estado ? 'btn-danger' : 'btn-secondary'}"
+				       th:href="@{'/categorias/delete/' + ${c.idCategoria}}"
+				       th:text="${c.estado ? 'Desactivar' : 'Activar'}"
+				       onclick="return confirm('¿Desea cambiar el estado de esta categoría?');"></a>
+				  </td>
+				</tr>
+              <tr th:if="${#lists.isEmpty(categorias)}">
+                <td colspan="5" class="muted" style="text-align: center; padding: 25px;">No hay categorías registradas.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

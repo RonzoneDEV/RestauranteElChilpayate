@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monitor KDS de Cocina · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css(v='3.2')}">
+  <style>
+    body {
+      background: #0b1120 !important;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .kds-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 20px;
+      align-items: start;
+    }
+    .kds-card {
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s ease;
+      height: 560px; /* Tamaño predeterminado uniforme para evitar desorden */
+      min-height: 560px;
+      max-height: 560px;
+    }
+    .kds-card.impreso {
+      border-color: #3b82f6;
+    }
+    .kds-card.preparando {
+      border-color: #f59e0b;
+      box-shadow: 0 0 22px rgba(245, 158, 11, 0.25);
+    }
+    .badge-impreso {
+      background: rgba(59, 130, 246, 0.2);
+      color: #93c5fd;
+      border: 1px solid #3b82f6;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .badge-preparando {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fcd34d;
+      border: 1px solid #f59e0b;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .kds-head {
+      padding: 14px 18px;
+      background: #0f172a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+      flex-shrink: 0;
+    }
+    .kds-progress-wrap {
+      padding: 8px 18px 10px;
+      background: #0f172a;
+      border-bottom: 1px solid #334155;
+      flex-shrink: 0;
+    }
+    .kds-progress-bar-bg {
+      height: 6px;
+      background: #334155;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .kds-progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #f59e0b, #22c55e);
+      border-radius: 999px;
+      transition: width 0.3s ease;
+    }
+    .kds-body {
+      padding: 14px 16px;
+      flex: 1;
+      overflow-y: auto; /* Barra interna con tamaño predeterminado */
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .kds-body::-webkit-scrollbar {
+      width: 6px;
+    }
+    .kds-body::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.4);
+      border-radius: 8px;
+    }
+    .kds-body::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 8px;
+    }
+    .kds-body::-webkit-scrollbar-thumb:hover {
+      background: #f59e0b;
+    }
+    .kds-filter-btn {
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .kds-filter-btn:hover {
+      color: #fff;
+      border-color: #64748b;
+    }
+    .kds-filter-btn.active {
+      background: #f59e0b;
+      color: #0f172a;
+      border-color: #f59e0b;
+      font-weight: 800;
+    }
+    .kds-section-label {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .kds-counter-pill {
+      font-size: 11px;
+      font-weight: 900;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+    }
+    .kds-items-container {
+      min-height: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Plato en KDS */
+    .kds-item {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 12px 14px;
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+    .kds-item:hover {
+      border-color: #64748b;
+    }
+    .kds-item.listo {
+      background: rgba(34, 197, 94, 0.08);
+      border: 1px dashed #16a34a;
+      opacity: 0.88;
+    }
+    .kds-item.listo .kds-item-title {
+      color: #86efac;
+      text-decoration: line-through;
+    }
+    .kds-item-info {
+      flex: 1;
+    }
+    .kds-item-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.3;
+    }
+    .kds-item-nota {
+      margin-top: 6px;
+      padding: 5px 10px;
+      background: rgba(56, 189, 248, 0.15);
+      border-left: 3px solid #38bdf8;
+      border-radius: 6px;
+      color: #7dd3fc;
+      font-weight: 700;
+      font-size: 12px;
+    }
+    .kds-item-cremas {
+      font-size: 12px;
+      color: #fcd34d;
+      margin-top: 4px;
+    }
+    .kds-item-salsas {
+      font-size: 12px;
+      color: #f87171;
+      margin-top: 4px;
+    }
+
+    /* Control Check / Checkbox Touch-Friendly */
+    .kds-check-control {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      user-select: none;
+      padding: 4px;
+      border-radius: 10px;
+      transition: all 0.2s;
+    }
+    .kds-check-control:hover .kds-check-box {
+      border-color: #22c55e;
+      transform: scale(1.08);
+    }
+    .kds-check-control.bloqueado {
+      opacity: 0.35 !important;
+      cursor: not-allowed !important;
+      pointer-events: none !important;
+    }
+    .kds-check-control.bloqueado .kds-check-box {
+      border-color: #475569 !important;
+      background: #0f172a !important;
+      box-shadow: none !important;
+    }
+    .kds-check-input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .kds-check-box {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      border: 2px solid #64748b;
+      background: #1e293b;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .kds-item.listo .kds-check-box {
+      background: #22c55e;
+      border-color: #22c55e;
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.5);
+    }
+    .kds-check-tick {
+      color: #ffffff;
+      font-weight: 900;
+      font-size: 18px;
+      display: none;
+      line-height: 1;
+    }
+    .kds-item.listo .kds-check-tick {
+      display: block;
+    }
+    .kds-check-status-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: #94a3b8;
+      transition: color 0.2s;
+    }
+    .kds-item.listo .kds-check-status-label {
+      color: #4ade80;
+    }
+
+    /* Footer y Botones */
+    .kds-footer {
+      padding: 14px 18px;
+      background: #0f172a;
+      border-top: 1px solid #334155;
+      display: flex;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .btn-iniciar {
+      background: #f59e0b;
+      color: #0f172a;
+      font-weight: 800;
+      font-size: 13px;
+      border: none;
+      border-radius: 12px;
+      padding: 11px 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-iniciar:hover:not(:disabled) {
+      background: #fbbf24;
+      transform: translateY(-1px);
+    }
+    .btn-completar {
+      width: 100%;
+      font-size: 13px;
+      font-weight: 800;
+      border-radius: 12px;
+      padding: 11px 14px;
+      border: none;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-completar-activo {
+      background: #22c55e !important;
+      color: #052e16 !important;
+      cursor: pointer !important;
+      box-shadow: 0 4px 16px rgba(34, 197, 94, 0.4);
+    }
+    .btn-completar-activo:hover {
+      background: #16a34a !important;
+      color: #ffffff !important;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.6);
+    }
+    .btn-bloqueado,
+    button:disabled.btn-bloqueado {
+      background: #1e293b !important;
+      color: #64748b !important;
+      border: 1px solid #334155 !important;
+      cursor: not-allowed !important;
+      opacity: 0.65 !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}" style="background: #0f172a; color: #fff; border-bottom: 1px solid #334155;"></header>
+
+    <div class="content" style="max-width: 1700px;">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <!-- Encabezado KDS -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; color: #fff;">
+        <div>
+          <div class="eyebrow" style="color: #f59e0b;">KDS · Monitor de Cocina y Despacho</div>
+          <h1 class="page-title" style="color: #fff; margin: 4px 0;">Monitor de Cocina (Preparación en Vivo)</h1>
+          <p class="muted" style="color: #94a3b8; margin: 0;">Inicia el pedido, marca los platos que van saliendo y completa el ticket cuando todo esté listo.</p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <span id="kds-live-indicator" style="background: rgba(34, 197, 94, 0.15); color: #86efac; border: 1px solid #16a34a; padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+            <span style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; box-shadow: 0 0 8px #22c55e;"></span>
+            En vivo (Auto)
+          </span>
+          <button type="button" class="btn btn-soft" style="background: #1e293b; color: #f8fafc; border: 1px solid #334155;" onclick="probarSonido()">🔔 Probar Sonido</button>
+          <a class="btn btn-primary" th:href="@{/despacho}">🛎 Despacho de Mozos</a>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros Rápidos por Estado -->
+      <div style="display: flex; gap: 10px; margin-bottom: 22px; flex-wrap: wrap; align-items: center;">
+        <span style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b;">Filtrar Pantalla:</span>
+        <button type="button" id="filter-btn-TODOS" onclick="filtrarKds('TODOS')" class="kds-filter-btn active">
+          📋 Todos (<span th:text="${#lists.size(tickets)}">0</span>)
+        </button>
+        <button type="button" id="filter-btn-PREPARANDO" onclick="filtrarKds('PREPARANDO')" class="kds-filter-btn">
+          👨‍🍳 En Preparación
+        </button>
+        <button type="button" id="filter-btn-IMPRESO" onclick="filtrarKds('IMPRESO')" class="kds-filter-btn">
+          ⏳ En Cola (Nuevos)
+        </button>
+      </div>
+
+      <!-- Cuadrícula de Tickets de Cocina Ordenados -->
+      <div class="kds-grid" th:if="${not #lists.isEmpty(tickets)}">
+        <div th:each="t : ${tickets}"
+             th:id="'ticket-card-' + ${t.idTicket}"
+             th:data-id="${t.idTicket}"
+             th:data-estado="${t.estado.name()}"
+             th:class="${'kds-card ' + (t.estado.name() == 'PREPARANDO' ? 'preparando' : 'impreso')}">
+          
+          <!-- Encabezado del Ticket: Correlativo, Mesa y Hora -->
+          <div class="kds-head">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <b style="font-size: 20px; color: #fbbf24;" th:text="'Ticket #' + ${t.correlativo}"></b>
+                <span th:id="'badge-estado-' + ${t.idTicket}"
+                      th:class="${'badge ' + (t.estado.name() == 'PREPARANDO' ? 'badge-preparando' : 'badge-impreso')}"
+                      th:text="${t.estado.name() == 'PREPARANDO' ? 'EN PREPARACIÓN' : 'NUEVO'}"></span>
+              </div>
+              <div style="font-size: 12px; color: #94a3b8; margin-top: 3px;" th:text="${t.pedido != null ? t.pedido.codigo : ''}"></div>
+            </div>
+            <div style="text-align: right;">
+              <span th:if="${t.pedido != null and t.pedido.mesa != null}"
+                    class="badge" style="background: #2563eb; color: #fff; font-size: 15px; font-weight: 900; padding: 4px 10px;"
+                    th:text="'MESA ' + ${t.pedido.mesa.numero}"></span>
+              <span th:if="${t.pedido != null and t.pedido.mesa == null}"
+                    class="badge" style="background: #7c3aed; color: #fff; font-size: 15px; font-weight: 900; padding: 4px 10px;">DELIVERY</span>
+              <div style="font-size: 12px; color: #cbd5e1; margin-top: 4px;"
+                   th:text="${#temporals.format(t.fechaHora, 'HH:mm:ss')}"></div>
+            </div>
+          </div>
+
+          <!-- Barra de Progreso Visual del Ticket -->
+          <div class="kds-progress-wrap">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; color: #94a3b8;">
+              <span>Progreso de platos</span>
+              <span th:id="'progress-text-' + ${t.idTicket}" style="color: #fbbf24;">0 listos</span>
+            </div>
+            <div class="kds-progress-bar-bg">
+              <div th:id="'progress-fill-' + ${t.idTicket}" class="kds-progress-bar-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <!-- Cuerpo: Con barra interna scrollable predeterminada -->
+          <div class="kds-body">
+
+            <!-- 1. PRODUCTOS DESMARCADOS / PENDIENTES PRIMERO -->
+            <div class="kds-section">
+              <div class="kds-section-label" style="color: #fbbf24;">
+                <span>⏳ Platos por Preparar / Despachar</span>
+                <span class="kds-counter-pill" th:id="'count-pendientes-' + ${t.idTicket}">0</span>
+              </div>
+
+              <div th:id="'pendientes-ticket-' + ${t.idTicket}" class="kds-items-container">
+                <th:block th:each="d : ${t.detallePedido}"
+                          th:if="${d.estado.name() != 'LISTO' and d.estado.name() != 'ENTREGADO' and d.estado.name() != 'ANULADO'}">
+                  <div class="kds-item"
+                       th:id="'item-row-' + ${d.idDetallePedido}"
+                       th:data-id="${d.idDetallePedido}"
+                       th:data-ticket="${t.idTicket}">
+                    <div class="kds-item-info">
+                      <div class="kds-item-title" th:text="${d.producto != null ? d.producto.nombre : 'Plato'}"></div>
+
+                      <!-- Nota para cocina -->
+                      <div th:if="${d.nota != null and !d.nota.isBlank()}"
+                           class="kds-item-nota">
+                        📝 <span>Nota: </span><b th:text="${d.nota}"></b>
+                      </div>
+
+                      <!-- Cremas -->
+                      <div th:if="${d.detallePedidoCrema != null and not #lists.isEmpty(d.detallePedidoCrema)}"
+                           class="kds-item-cremas">
+                        🥣 Cremas: <span th:each="c, iter : ${d.detallePedidoCrema}"
+                                          th:text="${c.crema != null ? c.crema.nombre : ''} + (${iter.last} ? '' : ', ')"></span>
+                      </div>
+
+                      <!-- Salsas -->
+                      <div th:if="${d.detallePedidoSalsa != null and not #lists.isEmpty(d.detallePedidoSalsa)}"
+                           class="kds-item-salsas">
+                        🌶 Salsas: <span th:each="s, iter : ${d.detallePedidoSalsa}"
+                                          th:text="${s.salsa != null ? s.salsa.nombre : ''} + (${iter.last} ? '' : ', ')"></span>
+                      </div>
+                    </div>
+
+                    <!-- Check de Salida -->
+                    <label th:class="${'kds-check-control ' + (t.estado.name() != 'PREPARANDO' ? 'bloqueado' : '')}"
+                           th:title="${t.estado.name() != 'PREPARANDO' ? '🔒 Debes hacer clic en Iniciar Pedido para habilitar el marcado' : 'Marcar plato como salido de cocina'}">
+                      <input type="checkbox"
+                             class="kds-check-input"
+                             th:disabled="${t.estado.name() != 'PREPARANDO'}"
+                             th:data-id="${d.idDetallePedido}"
+                             th:data-ticket="${t.idTicket}"
+                             onchange="toggleItemCheck(this.dataset.id, this.dataset.ticket, this)">
+                      <span class="kds-check-box">
+                        <span class="kds-check-tick">✓</span>
+                      </span>
+                      <span class="kds-check-status-label">Marcar</span>
+                    </label>
+                  </div>
+                </th:block>
+              </div>
+            </div>
+
+            <!-- 2. PRODUCTOS MARCADOS AL FINAL (Permanecen en la vista y se pueden desmarcar) -->
+            <div class="kds-section">
+              <div class="kds-section-label" style="color: #4ade80;">
+                <span>✅ Ya Marcados / Salidos (Clic para desmarcar)</span>
+                <span class="kds-counter-pill" style="background: rgba(34, 197, 94, 0.2); color: #86efac;" th:id="'count-marcados-' + ${t.idTicket}">0</span>
+              </div>
+
+              <div th:id="'marcados-ticket-' + ${t.idTicket}" class="kds-items-container">
+                <th:block th:each="d : ${t.detallePedido}"
+                          th:if="${d.estado.name() == 'LISTO' or d.estado.name() == 'ENTREGADO'}">
+                  <div class="kds-item listo"
+                       th:id="'item-row-' + ${d.idDetallePedido}"
+                       th:data-id="${d.idDetallePedido}"
+                       th:data-ticket="${t.idTicket}">
+                    <div class="kds-item-info">
+                      <div class="kds-item-title" th:text="${d.producto != null ? d.producto.nombre : 'Plato'}"></div>
+
+                      <!-- Nota para cocina -->
+                      <div th:if="${d.nota != null and !d.nota.isBlank()}"
+                           class="kds-item-nota">
+                        📝 <span>Nota: </span><b th:text="${d.nota}"></b>
+                      </div>
+
+                      <!-- Cremas -->
+                      <div th:if="${d.detallePedidoCrema != null and not #lists.isEmpty(d.detallePedidoCrema)}"
+                           class="kds-item-cremas">
+                        🥣 Cremas: <span th:each="c, iter : ${d.detallePedidoCrema}"
+                                          th:text="${c.crema != null ? c.crema.nombre : ''} + (${iter.last} ? '' : ', ')"></span>
+                      </div>
+
+                      <!-- Salsas -->
+                      <div th:if="${d.detallePedidoSalsa != null and not #lists.isEmpty(d.detallePedidoSalsa)}"
+                           class="kds-item-salsas">
+                        🌶 Salsas: <span th:each="s, iter : ${d.detallePedidoSalsa}"
+                                          th:text="${s.salsa != null ? s.salsa.nombre : ''} + (${iter.last} ? '' : ', ')"></span>
+                      </div>
+                    </div>
+
+                    <!-- Check de Salida (Marcado) -->
+                    <label th:class="${'kds-check-control ' + (t.estado.name() != 'PREPARANDO' ? 'bloqueado' : '')}"
+                           th:title="${t.estado.name() != 'PREPARANDO' ? '🔒 Debes hacer clic en Iniciar Pedido primero' : 'Plato salido (clic para desmarcar y regresar)'}">
+                      <input type="checkbox"
+                             class="kds-check-input"
+                             checked="checked"
+                             th:disabled="${t.estado.name() != 'PREPARANDO'}"
+                             th:data-id="${d.idDetallePedido}"
+                             th:data-ticket="${t.idTicket}"
+                             onchange="toggleItemCheck(this.dataset.id, this.dataset.ticket, this)">
+                      <span class="kds-check-box">
+                        <span class="kds-check-tick">✓</span>
+                      </span>
+                      <span class="kds-check-status-label">Listo</span>
+                    </label>
+                  </div>
+                </th:block>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Botones de Acción del Ticket -->
+          <div class="kds-footer">
+            <!-- 1. Botón Iniciar Pedido: Se bloquea al hacer clic o si ya está preparando -->
+            <button type="button"
+                    th:id="'btn-iniciar-' + ${t.idTicket}"
+                    th:disabled="${t.estado.name() == 'PREPARANDO'}"
+                    th:class="${'btn btn-iniciar ' + (t.estado.name() == 'PREPARANDO' ? 'btn-bloqueado' : '')}"
+                    th:onclick="'iniciarPedido(' + ${t.idTicket} + ')'"
+                    style="flex: 1;">
+              <span th:if="${t.estado.name() == 'PREPARANDO'}">🔒 En Preparación</span>
+              <span th:unless="${t.estado.name() == 'PREPARANDO'}">👨‍🍳 Iniciar Pedido</span>
+            </button>
+
+            <!-- 2. Botón Pedido Completado: Bloqueado por defecto, se activa cuando está en preparación y todos los productos están marcados -->
+            <form th:action="@{'/cocina/ticket/' + ${t.idTicket} + '/completar'}" method="post" style="flex: 1.3;" th:id="'form-completar-' + ${t.idTicket}">
+              <button type="submit"
+                      th:id="'btn-completar-' + ${t.idTicket}"
+                      th:disabled="${not t.puedeCompletar}"
+                      th:class="${'btn btn-completar ' + (t.puedeCompletar ? 'btn-completar-activo' : 'btn-bloqueado')}">
+                ✅ Pedido Completado
+              </button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Estado vacío cuando no hay comandas -->
+      <div th:if="${#lists.isEmpty(tickets)}"
+           class="card" style="background: #1e293b; color: #94a3b8; text-align: center; padding: 70px 20px; border-color: #334155; border-radius: 20px;">
+        <span style="font-size: 54px; display: block; margin-bottom: 12px;">👨‍🍳</span>
+        <b style="font-size: 22px; color: #f8fafc;">¡Cocina despejada! No hay Tickets pendientes.</b>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  // Campana de sonido para nuevos tickets
+  function sonarCampana() {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(880, ctx.currentTime);
+      gain1.gain.setValueAtTime(0.35, ctx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start();
+      osc1.stop(ctx.currentTime + 0.6);
+
+      setTimeout(() => {
+        try {
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = 'triangle';
+          osc2.frequency.setValueAtTime(1174.66, ctx.currentTime);
+          gain2.gain.setValueAtTime(0.3, ctx.currentTime);
+          gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.7);
+          osc2.connect(gain2);
+          gain2.connect(ctx.destination);
+          osc2.start();
+          osc2.stop(ctx.currentTime + 0.7);
+        } catch(e) {}
+      }, 150);
+    } catch(e) {
+      console.warn('Audio no permitido o no soportado:', e);
+    }
+  }
+
+  function probarSonido() {
+    sonarCampana();
+  }
+
+  // 1. Iniciar Pedido: Se bloquea y actualiza estado
+  function iniciarPedido(idTicket) {
+    const btn = document.getElementById('btn-iniciar-' + idTicket);
+    if (!btn || btn.disabled) return;
+
+    btn.disabled = true;
+    btn.classList.add('btn-bloqueado');
+    btn.innerHTML = '⏳ Iniciando...';
+
+    fetch('/cocina/api/ticket/' + idTicket + '/preparando', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        btn.innerHTML = '🔒 En Preparación';
+        const card = document.getElementById('ticket-card-' + idTicket);
+        if (card) {
+          card.dataset.estado = 'PREPARANDO';
+          card.classList.remove('impreso');
+          card.classList.add('preparando');
+
+          const badge = document.getElementById('badge-estado-' + idTicket);
+          if (badge) {
+            badge.textContent = 'EN PREPARACIÓN';
+            badge.className = 'badge badge-preparando';
+          }
+
+          // Habilitar inmediatamente todos los checks de productos de esta comanda
+          const checks = card.querySelectorAll('.kds-check-control');
+          checks.forEach(ctrl => {
+            ctrl.classList.remove('bloqueado');
+            ctrl.title = 'Marcar plato como salido de cocina';
+            const input = ctrl.querySelector('.kds-check-input');
+            if (input) {
+              input.removeAttribute('disabled');
+            }
+          });
+        }
+        actualizarEstadoTicket(idTicket);
+      } else {
+        alert('Error al iniciar pedido: ' + (data.error || 'Desconocido'));
+        btn.disabled = false;
+        btn.classList.remove('btn-bloqueado');
+        btn.innerHTML = '👨‍🍳 Iniciar Pedido';
+      }
+    })
+    .catch(err => {
+      console.error('Error al iniciar pedido:', err);
+      btn.disabled = false;
+      btn.classList.remove('btn-bloqueado');
+      btn.innerHTML = '👨‍🍳 Iniciar Pedido';
+    });
+  }
+
+  // 2. Marcar o Desmarcar check de plato (No se eliminan, se mueven ordenados)
+  function toggleItemCheck(idDetalle, idTicket, checkbox) {
+    const card = document.getElementById('ticket-card-' + idTicket);
+    if (card && card.dataset.estado !== 'PREPARANDO') {
+      alert('Debes hacer clic en "Iniciar Pedido" antes de marcar los productos.');
+      checkbox.checked = !checkbox.checked;
+      return;
+    }
+
+    const row = document.getElementById('item-row-' + idDetalle);
+    if (!row) return;
+
+    fetch('/cocina/api/item/' + idDetalle + '/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        const isListo = data.esListo;
+        const statusLabel = row.querySelector('.kds-check-status-label');
+        const pendientesContainer = document.getElementById('pendientes-ticket-' + idTicket);
+        const marcadosContainer = document.getElementById('marcados-ticket-' + idTicket);
+
+        if (isListo) {
+          // Marcar como salido: clase listo, texto "Listo", mover al contenedor de marcados (al final)
+          row.classList.add('listo');
+          checkbox.checked = true;
+          if (statusLabel) statusLabel.textContent = 'Listo';
+          if (marcadosContainer) {
+            marcadosContainer.appendChild(row);
+          }
+        } else {
+          // Desmarcar: quitar clase listo, texto "Marcar", mover al contenedor de pendientes (arriba)
+          row.classList.remove('listo');
+          checkbox.checked = false;
+          if (statusLabel) statusLabel.textContent = 'Marcar';
+          if (pendientesContainer) {
+            pendientesContainer.appendChild(row);
+          }
+        }
+
+        actualizarEstadoTicket(idTicket);
+      } else {
+        alert('Error al actualizar plato: ' + (data.error || 'Desconocido'));
+        // Revertir checkbox si falló
+        checkbox.checked = !checkbox.checked;
+      }
+    })
+    .catch(err => {
+      console.error('Error al comunicarse con la cocina:', err);
+      checkbox.checked = !checkbox.checked;
+    });
+  }
+
+  // 3. Recalcular contadores, barra de progreso y activar/bloquear botón de "Pedido Completado"
+  function actualizarEstadoTicket(idTicket) {
+    const card = document.getElementById('ticket-card-' + idTicket);
+    if (!card) return;
+
+    const items = card.querySelectorAll('.kds-item');
+    const itemsListos = card.querySelectorAll('.kds-item.listo');
+
+    const total = items.length;
+    const listos = itemsListos.length;
+    const pendientes = total - listos;
+
+    const pillPend = document.getElementById('count-pendientes-' + idTicket);
+    const pillMarc = document.getElementById('count-marcados-' + idTicket);
+    if (pillPend) pillPend.textContent = pendientes;
+    if (pillMarc) pillMarc.textContent = listos;
+
+    // Actualizar barra de progreso visual
+    const fill = document.getElementById('progress-fill-' + idTicket);
+    const progText = document.getElementById('progress-text-' + idTicket);
+    const pct = total > 0 ? Math.round((listos / total) * 100) : 0;
+    if (fill) fill.style.width = pct + '%';
+    if (progText) progText.textContent = `${listos} de ${total} listos (${pct}%)`;
+
+    const estado = card.dataset.estado; // "IMPRESO" o "PREPARANDO"
+    const btnCompletar = document.getElementById('btn-completar-' + idTicket);
+
+    if (btnCompletar) {
+      const todosMarcados = (total > 0 && listos === total);
+      // El botón solo se activa si: estado es PREPARANDO Y todos los productos están marcados
+      if (estado === 'PREPARANDO' && todosMarcados) {
+        btnCompletar.removeAttribute('disabled');
+        btnCompletar.classList.remove('btn-bloqueado');
+        btnCompletar.classList.add('btn-completar-activo');
+        btnCompletar.title = "¡Todos los platos listos! Haz clic para completar el pedido.";
+      } else {
+        btnCompletar.setAttribute('disabled', 'disabled');
+        btnCompletar.classList.remove('btn-completar-activo');
+        btnCompletar.classList.add('btn-bloqueado');
+        if (estado !== 'PREPARANDO') {
+          btnCompletar.title = "Debes hacer clic en 'Iniciar Pedido' primero.";
+        } else {
+          btnCompletar.title = "Faltan marcar " + pendientes + " plato(s) como salido(s).";
+        }
+      }
+    }
+  }
+
+  function filtrarKds(tipo) {
+    const cards = document.querySelectorAll('.kds-card');
+    cards.forEach(card => {
+      const estado = card.dataset.estado;
+      if (tipo === 'TODOS') {
+        card.style.display = 'flex';
+      } else if (tipo === 'PREPARANDO') {
+        card.style.display = estado === 'PREPARANDO' ? 'flex' : 'none';
+      } else if (tipo === 'IMPRESO') {
+        card.style.display = estado === 'IMPRESO' ? 'flex' : 'none';
+      }
+    });
+
+    ['TODOS', 'PREPARANDO', 'IMPRESO'].forEach(t => {
+      const btn = document.getElementById('filter-btn-' + t);
+      if (btn) {
+        if (t === tipo) btn.classList.add('active');
+        else btn.classList.remove('active');
+      }
+    });
+  }
+
+  // Inicializar contadores en todas las tarjetas al cargar la página
+  document.addEventListener('DOMContentLoaded', () => {
+    const cards = document.querySelectorAll('.kds-card');
+    cards.forEach(c => {
+      const id = c.dataset.id;
+      if (id) {
+        actualizarEstadoTicket(id);
+      }
+    });
+  });
+
+  // Polling silencioso en segundo plano para nuevos pedidos entrantes
+  let totalTicketsActual = document.querySelectorAll('.kds-card').length;
+
+  setInterval(() => {
+    fetch('/cocina/api/status')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          if (data.count > totalTicketsActual) {
+            sonarCampana();
+            setTimeout(() => {
+              window.location.reload();
+            }, 600);
+          } else if (data.count < totalTicketsActual) {
+            window.location.reload();
+          }
+        }
+      })
+      .catch(() => {});
+  }, 5000);
+</script>
+</body>
+</html>

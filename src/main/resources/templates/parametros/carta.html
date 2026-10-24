@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Parámetros de la Carta · El Chilpayate</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+  <style>
+    .param-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .param-card {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.03);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .param-badge-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 14px;
+    }
+    .simulator-box {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 14px;
+    }
+    .sim-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside th:replace="~{fragments/menu :: menu}"></aside>
+
+  <main>
+    <header th:replace="~{fragments/menu :: topbar}"></header>
+
+    <div class="content" style="max-width: 1200px;">
+      <div th:replace="~{fragments/menu :: alerts}"></div>
+
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; flex-wrap: wrap; gap: 14px;">
+        <div>
+          <div class="eyebrow">Configuración del Sistema</div>
+          <h1 class="page-title" style="margin: 0;">⚙️ Parámetros de la Carta</h1>
+          <p class="muted" style="margin: 4px 0 0;">
+            Configuración proporcional de extras en salsas para la categoría <b>Alitas</b> y adicionales para <b>Platos Principales</b>.
+          </p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <a class="btn btn-secondary" th:href="@{/categorias}">📂 Ver Categorías</a>
+          <a class="btn btn-soft" th:href="@{/salon}">▦ Ir al Salón</a>
+        </div>
+      </div>
+
+      <form th:action="@{/parametros-carta}" th:object="${parametros}" method="post">
+        <input type="hidden" th:field="*{idParametro}">
+
+        <div class="param-grid">
+
+          <!-- TARJETA 1: PARÁMETROS PARA ALITAS Y EXTRAS EN SALSAS -->
+          <div class="param-card" style="border-top: 4px solid #f59e0b;">
+            <div>
+              <div class="param-badge-icon" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a;">
+                🍗
+              </div>
+              <h3 style="margin: 0 0 6px; font-size: 18px; color: #1e293b;">Parámetros para Categoría Alitas</h3>
+              <p class="muted" style="font-size: 13px; margin-bottom: 16px;">
+                Define cuántos extras en salsas se permiten por cada porción de alitas en el pedido.
+              </p>
+
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label" style="font-weight: 800; color: #0f172a;">
+                  🌶️ Máximo de Extras en Salsas por Porción de Alitas *
+                </label>
+                <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px;">
+                  <input type="number" class="form-control" th:field="*{maxExtrasSalsasPorAlita}"
+                         id="inputMaxSalsas" min="0" max="20" required
+                         style="font-size: 18px; font-weight: 800; width: 100px; text-align: center;"
+                         oninput="recalcularSimulador()">
+                  <span class="muted" style="font-size: 13px;">salsas extras por alitas (por defecto: 2)</span>
+                </div>
+              </div>
+
+              <!-- Regla de proporcionalidad explicada -->
+              <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 12px; font-size: 12px; color: #78350f;">
+                <b>📐 Regla Proporcional:</b>
+                <ul style="margin: 6px 0 0; padding-left: 18px;">
+                  <li>1 porción de alitas = hasta <span class="val-salsa-1">2</span> salsas permitidas</li>
+                  <li>2 porciones de alitas = hasta <span class="val-salsa-2">4</span> salsas permitidas</li>
+                  <li>Si se eliminan alitas en el carrito y hay exceso de salsas, <b>se bloquea el envío a cocina</b>.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- TARJETA 2: PARÁMETROS PARA PLATOS PRINCIPALES Y ADICIONALES -->
+          <div class="param-card" style="border-top: 4px solid #3b82f6;">
+            <div>
+              <div class="param-badge-icon" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">
+                🍽️
+              </div>
+              <h3 style="margin: 0 0 6px; font-size: 18px; color: #1e293b;">Parámetros para Platos Principales</h3>
+              <p class="muted" style="font-size: 13px; margin-bottom: 16px;">
+                Define cuántos adicionales se permiten por plato principal (incluye Alitas, Hamburguesas, Salchipapas, Broaster).
+              </p>
+
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label" style="font-weight: 800; color: #0f172a;">
+                  🍟 Máximo de Adicionales por Plato Principal *
+                </label>
+                <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px;">
+                  <input type="number" class="form-control" th:field="*{maxAdicionalesPorPlatoPrincipal}"
+                         id="inputMaxAdicionales" min="0" max="20" required
+                         style="font-size: 18px; font-weight: 800; width: 100px; text-align: center;"
+                         oninput="recalcularSimulador()">
+                  <span class="muted" style="font-size: 13px;">adicionales por plato (por defecto: 2)</span>
+                </div>
+              </div>
+
+              <!-- Regla de proporcionalidad explicada -->
+              <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 12px; font-size: 12px; color: #1e40af;">
+                <b>📐 Regla Proporcional:</b>
+                <ul style="margin: 6px 0 0; padding-left: 18px;">
+                  <li>1 plato principal = hasta <span class="val-adic-1">2</span> adicionales permitidos</li>
+                  <li>2 platos principales = hasta <span class="val-adic-2">4</span> adicionales permitidos</li>
+                  <li>Si se eliminan platos y hay exceso de adicionales, <b>se bloquea el envío a cocina</b>.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- TARJETA 3: SIMULADOR EN VIVO Y DESCRIPCIÓN -->
+        <div class="card" style="margin-bottom: 24px;">
+          <h3 style="margin: 0 0 10px; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+            <span>🧪 Simulador de Validación de Pedido en Tiempo Real</span>
+            <span class="badge badge-info" style="font-size: 11px;">Comprueba las Reglas</span>
+          </h3>
+          <p class="muted" style="font-size: 13px; margin-bottom: 16px;">
+            Ingresa cantidades para verificar cómo reaccionará el sistema en el carrito si se eliminan platos o se agregan salsas en exceso:
+          </p>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 16px;">
+            <div>
+              <label class="form-label" style="font-size: 12px;">🍗 Alitas en Carrito:</label>
+              <input type="number" id="simAlitas" class="form-control" value="1" min="0" oninput="recalcularSimulador()">
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 12px;">🌶️ Salsas (Extras) en Carrito:</label>
+              <input type="number" id="simSalsas" class="form-control" value="3" min="0" oninput="recalcularSimulador()">
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 12px;">🍽️ Principales en Carrito:</label>
+              <input type="number" id="simPrincipales" class="form-control" value="1" min="0" oninput="recalcularSimulador()">
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 12px;">🍟 Adicionales en Carrito:</label>
+              <input type="number" id="simAdicionales" class="form-control" value="1" min="0" oninput="recalcularSimulador()">
+            </div>
+          </div>
+
+          <div id="simResultado" style="padding: 14px; border-radius: 12px; font-size: 13px; font-weight: 700;">
+            <!-- Calculado dinámicamente con JS -->
+          </div>
+
+          <div style="margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
+            <label class="form-label" style="font-weight: 700;">Notas / Descripción de Configuración:</label>
+            <input type="text" class="form-control" th:field="*{descripcion}"
+                   placeholder="Ej: Parámetros del menú estándar 2026...">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+              <small class="muted" style="font-size: 11px;">
+                Última modificación: <b th:text="${parametros.fechaActualizacion != null ? #temporals.format(parametros.fechaActualizacion, 'dd/MM/yyyy HH:mm') : 'Inicial'}"></b>
+                por <b th:text="${parametros.modificadoPor != null ? parametros.modificadoPor : 'admin'}">admin</b>
+              </small>
+            </div>
+          </div>
+
+          <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
+            <a class="btn btn-soft" th:href="@{/categorias}">Cancelar</a>
+            <button type="submit" class="btn btn-primary" style="padding: 12px 28px; font-size: 15px; font-weight: 800;">
+              💾 Guardar Parámetros de la Carta
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <!-- TABLA RESUMEN DE CATEGORÍAS -->
+      <div class="card">
+        <h3 style="margin: 0 0 12px; font-size: 16px;">📂 Clasificación Funcional de Categorías</h3>
+        <p class="muted" style="font-size: 13px; margin-bottom: 14px;">
+          Las categorías están clasificadas para evitar conflictos entre salsas (renombradas a <b>Extras</b>) y adicionales comunes:
+        </p>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Categoría</th>
+                <th>Clasificación Funcional</th>
+                <th>Regla en el Carrito</th>
+                <th>Límite Máximo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="c : ${categorias}">
+                <td><b th:text="${c.nombre}"></b></td>
+                <td>
+                  <span th:if="${#strings.containsIgnoreCase(c.nombre, 'alita')}" class="badge badge-ok">🍗 Plato Principal (Alitas)</span>
+                  <span th:if="${#strings.containsIgnoreCase(c.nombre, 'salsa')}" class="badge" style="background:#fee2e2; color:#991b1b; border:1px solid #fecaca;">🌶️ Extra (Salsas)</span>
+                  <span th:if="${#strings.containsIgnoreCase(c.nombre, 'adicional') or #strings.containsIgnoreCase(c.nombre, 'crema')}" class="badge badge-warn">🍟 Adicional</span>
+                  <span th:if="${#strings.containsIgnoreCase(c.nombre, 'bebida') or #strings.containsIgnoreCase(c.nombre, 'gaseosa')}" class="badge badge-info">🥤 Intermedio</span>
+                  <span th:if="${!#strings.containsIgnoreCase(c.nombre, 'alita') and !#strings.containsIgnoreCase(c.nombre, 'salsa') and !#strings.containsIgnoreCase(c.nombre, 'adicional') and !#strings.containsIgnoreCase(c.nombre, 'crema') and !#strings.containsIgnoreCase(c.nombre, 'bebida') and !#strings.containsIgnoreCase(c.nombre, 'gaseosa')}" class="badge" style="background:#f1f5f9; color:#475569;">🍽️ Plato Principal</span>
+                </td>
+                <td style="font-size: 13px;">
+                  <span th:if="${#strings.containsIgnoreCase(c.nombre, 'alita')}">Permite extras en salsas y adicionales</span>
+                  <span th:if="${#strings.containsIgnoreCase(c.nombre, 'salsa')}">Exige porción de Alitas en el pedido</span>
+                  <span th:if="${#strings.containsIgnoreCase(c.nombre, 'adicional')}">Exige plato principal en el pedido</span>
+                  <span th:if="${#strings.containsIgnoreCase(c.nombre, 'bebida')}">Venta libre independiente</span>
+                  <span th:if="${!#strings.containsIgnoreCase(c.nombre, 'alita') and !#strings.containsIgnoreCase(c.nombre, 'salsa') and !#strings.containsIgnoreCase(c.nombre, 'adicional') and !#strings.containsIgnoreCase(c.nombre, 'bebida')}">Habilita adicionales generales</span>
+                </td>
+                <td>
+                  <b th:if="${#strings.containsIgnoreCase(c.nombre, 'alita')}" th:text="'Max ' + ${parametros.maxExtrasSalsasPorAlita} + ' salsas / alitas'"></b>
+                  <b th:if="${#strings.containsIgnoreCase(c.nombre, 'salsa')}" th:text="'Proporcional a Alitas'"></b>
+                  <b th:if="${#strings.containsIgnoreCase(c.nombre, 'adicional')}" th:text="'Max ' + ${parametros.maxAdicionalesPorPlatoPrincipal} + ' / principal'"></b>
+                  <span th:if="${!#strings.containsIgnoreCase(c.nombre, 'alita') and !#strings.containsIgnoreCase(c.nombre, 'salsa') and !#strings.containsIgnoreCase(c.nombre, 'adicional')}" class="muted">-</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  function recalcularSimulador() {
+    const maxSalsas = parseInt(document.getElementById('inputMaxSalsas').value) || 0;
+    const maxAdic = parseInt(document.getElementById('inputMaxAdicionales').value) || 0;
+
+    // Actualizar etiquetas explicativas
+    document.querySelectorAll('.val-salsa-1').forEach(e => e.textContent = maxSalsas);
+    document.querySelectorAll('.val-salsa-2').forEach(e => e.textContent = maxSalsas * 2);
+    document.querySelectorAll('.val-adic-1').forEach(e => e.textContent = maxAdic);
+    document.querySelectorAll('.val-adic-2').forEach(e => e.textContent = maxAdic * 2);
+
+    const alitas = parseInt(document.getElementById('simAlitas').value) || 0;
+    const salsas = parseInt(document.getElementById('simSalsas').value) || 0;
+    const principales = parseInt(document.getElementById('simPrincipales').value) || 0;
+    const adicionales = parseInt(document.getElementById('simAdicionales').value) || 0;
+
+    const maxSalsasPermitidas = alitas * maxSalsas;
+    const excesoSalsas = Math.max(0, salsas - maxSalsasPermitidas);
+
+    const maxAdicPermitidos = principales * maxAdic;
+    const excesoAdic = Math.max(0, adicionales - maxAdicPermitidos);
+
+    const resBox = document.getElementById('simResultado');
+
+    if (excesoSalsas > 0 || excesoAdic > 0) {
+      resBox.style.background = '#fef2f2';
+      resBox.style.border = '1.5px solid #ef4444';
+      resBox.style.color = '#991b1b';
+
+      let msg = '🚫 <b>ENVÍO A COCINA BLOQUEADO:</b> Se detectó exceso en el pedido: <br>';
+      if (excesoSalsas > 0) {
+        msg += `• <b>${excesoSalsas} salsa(s) en exceso</b> (tienes ${salsas}, permitidas: ${maxSalsasPermitidas} para ${alitas} porción(es) de alitas).<br>`;
+      }
+      if (excesoAdic > 0) {
+        msg += `• <b>${excesoAdic} adicional(es) en exceso</b> (tienes ${adicionales}, permitidos: ${maxAdicPermitidos} para ${principales} plato(s) principal(es)).<br>`;
+      }
+      msg += '<span style="font-weight:400; font-size:12px; margin-top:4px; display:block;">El sistema no permitirá pulsar el botón "Enviar a Cocina" hasta que se elimine el exceso.</span>';
+      resBox.innerHTML = msg;
+    } else {
+      resBox.style.background = '#f0fdf4';
+      resBox.style.border = '1.5px solid #22c55e';
+      resBox.style.color = '#15803d';
+      resBox.innerHTML = `✅ <b>PEDIDO VÁLIDO:</b> Las cantidades están en regla (${salsas}/${maxSalsasPermitidas} salsas permitidas, ${adicionales}/${maxAdicPermitidos} adicionales permitidos). <b>El pedido puede enviarse a cocina correctamente.</b>`;
+    }
+  }
+
+  // Inicializar al cargar
+  document.addEventListener('DOMContentLoaded', recalcularSimulador);
+</script>
+</body>
+</html>
